@@ -54,6 +54,8 @@ export const INITIAL_ADDRESSES: Address[] = [
 export const DEFAULT_CUSTOMER: User = {
   id: "cust-01",
   name: "Chetan Sharma",
+  username: "chetan",
+  password: "password123",
   phone: "+91 98765 43210",
   email: "chetan@example.com",
   role: "customer",
@@ -64,6 +66,8 @@ export const DEFAULT_CUSTOMER: User = {
 export const DEFAULT_WASHER = {
   id: "wash-01",
   name: "Rajesh Kumar",
+  username: "rajesh",
+  password: "washer123",
   phone: "+91 91234 56789",
   rating: 4.92,
   completedJobs: 348,

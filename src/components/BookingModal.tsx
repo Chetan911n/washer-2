@@ -12,6 +12,8 @@ import {
   MapPin,
   Check,
   Sparkles,
+  ShieldCheck,
+  Building,
 } from "lucide-react";
 
 interface BookingModalProps {
@@ -20,6 +22,7 @@ interface BookingModalProps {
   cars: Car[];
   addresses: Address[];
   onOpenAddCar: () => void;
+  onAddAddress?: (address: Omit<Address, "id">) => Address;
   onConfirmBooking: (data: {
     cars: Car[];
     address: Address;
@@ -43,6 +46,7 @@ export function BookingModal({
   cars,
   addresses,
   onOpenAddCar,
+  onAddAddress,
   onConfirmBooking,
 }: BookingModalProps) {
   // Selected cars array (supports multiple cars: 1, 2, or many!)
@@ -59,6 +63,13 @@ export function BookingModal({
   const [selectedSlot, setSelectedSlot] = useState<string>(TIME_SLOTS[1]);
   const [washType, setWashType] =
     useState<Booking["washType"]>("Exterior Foam Wash");
+
+  // Inline "Add New Address / Location" state
+  const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const [newLabel, setNewLabel] = useState("Home");
+  const [newStreet, setNewStreet] = useState("");
+  const [newParkingSpot, setNewParkingSpot] = useState("");
+  const [newCity, setNewCity] = useState("Bangalore");
 
   // Multi-car selection toggle
   const toggleCar = (id: string) => {
@@ -79,6 +90,24 @@ export function BookingModal({
     (acc, car) => acc + (CAR_PRICING[car.type] || 399),
     0
   );
+
+  const handleSaveNewLocation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStreet || !newParkingSpot) return;
+
+    if (onAddAddress) {
+      const created = onAddAddress({
+        label: newLabel,
+        street: newStreet.trim(),
+        parkingSpot: newParkingSpot.trim(),
+        city: newCity.trim(),
+      });
+      setSelectedAddressId(created.id);
+    }
+    setIsAddingLocation(false);
+    setNewStreet("");
+    setNewParkingSpot("");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +135,7 @@ export function BookingModal({
                 Select Cars to Wash
               </label>
               <p className="text-[11px] text-slate-500">
-                You can select 1, 2, or multiple cars for the same slot
+                Select 1, 2, or multiple cars for the same slot
               </p>
             </div>
             <button
@@ -248,36 +277,152 @@ export function BookingModal({
           </div>
         </div>
 
-        {/* Step 4: Address & Parking Spot */}
+        {/* Step 4: Service Address & Parking Spot with Inline Add */}
         <div>
-          <label className="text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-blue-600" />
-            Service Address & Parking Spot
-          </label>
-          <div className="space-y-1.5">
-            {addresses.map((addr) => (
-              <div
-                key={addr.id}
-                onClick={() => setSelectedAddressId(addr.id)}
-                className={`p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
-                  selectedAddressId === addr.id
-                    ? "border-blue-600 bg-blue-50/60 ring-1 ring-blue-600"
-                    : "border-slate-200 bg-white"
-                }`}
-              >
-                <div className="flex items-center justify-between font-bold text-slate-800">
-                  <span>{addr.label}: {addr.street}</span>
-                  {selectedAddressId === addr.id && (
-                    <Check className="w-3.5 h-3.5 text-blue-600" />
-                  )}
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 text-blue-600" />
+              Service Address & Parking Spot
+            </label>
+            <button
+              type="button"
+              onClick={() => setIsAddingLocation(!isAddingLocation)}
+              className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded-lg flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" />
+              <span>{isAddingLocation ? "Cancel" : "Add Location"}</span>
+            </button>
+          </div>
+
+          {/* Inline Add Location Form */}
+          {isAddingLocation ? (
+            <div className="p-3 bg-slate-50 border border-blue-200 rounded-xl space-y-2 mb-3">
+              <p className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                <Building className="w-3.5 h-3.5 text-blue-600" />
+                Add New Location for this Appointment
+              </p>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-600">
+                    Location Label
+                  </label>
+                  <select
+                    value={newLabel}
+                    onChange={(e) => setNewLabel(e.target.value)}
+                    className="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                  >
+                    <option value="Home">Home</option>
+                    <option value="Office">Office</option>
+                    <option value="Apartment / Society">Apartment / Society</option>
+                    <option value="Mall / Club">Mall / Club</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
-                <div className="text-slate-500 text-[11px] mt-0.5">
-                  Spot: <span className="font-semibold text-slate-700">{addr.parkingSpot}</span>
+
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-600">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={newCity}
+                    onChange={(e) => setNewCity(e.target.value)}
+                    placeholder="Bangalore"
+                    className="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-300"
+                  />
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-600">
+                  Building / Street Address
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newStreet}
+                  onChange={(e) => setNewStreet(e.target.value)}
+                  placeholder="e.g. Prestige Greenwoods, Tower 2"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-semibold text-blue-800">
+                  Exact Parking Spot / Bay Details
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newParkingSpot}
+                  onChange={(e) => setNewParkingSpot(e.target.value)}
+                  placeholder="e.g. Basement 2, Pillar #88 (Covered)"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-blue-400 bg-white font-medium"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSaveNewLocation}
+                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Save & Select This Location</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {addresses.map((addr) => (
+                <div
+                  key={addr.id}
+                  onClick={() => setSelectedAddressId(addr.id)}
+                  className={`p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
+                    selectedAddressId === addr.id
+                      ? "border-blue-600 bg-blue-50/60 ring-1 ring-blue-600"
+                      : "border-slate-200 bg-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-between font-bold text-slate-800">
+                    <span>
+                      {addr.label}: {addr.street}
+                    </span>
+                    {selectedAddressId === addr.id && (
+                      <Check className="w-3.5 h-3.5 text-blue-600" />
+                    )}
+                  </div>
+                  <div className="text-slate-600 text-[11px] mt-0.5 flex items-center justify-between">
+                    <span>
+                      Spot: <strong className="text-blue-800">{addr.parkingSpot}</strong>
+                    </span>
+                    <span className="text-slate-400 font-mono">{addr.city}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Step 5: Location Confirmation Card */}
+        {selectedAddress && (
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1 text-xs">
+            <div className="flex items-center justify-between font-bold text-slate-800">
+              <span className="flex items-center gap-1.5 text-green-700">
+                <ShieldCheck className="w-4 h-4 text-green-600" />
+                Confirmed Service Spot
+              </span>
+              <span className="text-[10px] text-slate-500 font-normal">
+                Doorstep Visit
+              </span>
+            </div>
+            <p className="text-slate-700 font-medium">
+              {selectedAddress.street}, {selectedAddress.city}
+            </p>
+            <p className="text-blue-700 font-bold bg-white inline-block px-2 py-0.5 rounded border border-blue-200 text-[11px]">
+              Parking Spot: {selectedAddress.parkingSpot}
+            </p>
+          </div>
+        )}
 
         {/* Total & Confirm CTA */}
         <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
@@ -290,7 +435,7 @@ export function BookingModal({
 
           <button
             type="submit"
-            disabled={selectedCars.length === 0}
+            disabled={selectedCars.length === 0 || !selectedAddress}
             className="py-2.5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-blue-500/20"
           >
             Confirm & Book Slot

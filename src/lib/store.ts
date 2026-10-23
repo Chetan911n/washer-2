@@ -89,6 +89,17 @@ export class WasherStore {
     return newCar;
   }
 
+  static addAddressToUser(address: Omit<Address, "id">): Address {
+    const user = this.getUser() || { ...DEFAULT_CUSTOMER, isLoggedIn: true, garage: [], addresses: [] };
+    const newAddr: Address = {
+      ...address,
+      id: "addr-" + Date.now(),
+    };
+    user.addresses = [...(user.addresses || []), newAddr];
+    this.setUser(user);
+    return newAddr;
+  }
+
   static addInitialCarAndAddress(car: Omit<Car, "id">, address: Omit<Address, "id">) {
     const user = this.getUser();
     if (!user) return;
@@ -292,6 +303,7 @@ export function useAppWasherStore() {
     logout: () => WasherStore.logout(),
     loginDemo: () => WasherStore.loginDemo(),
     addCarToGarage: (c: Omit<Car, "id">) => WasherStore.addCarToGarage(c),
+    addAddressToUser: (a: Omit<Address, "id">) => WasherStore.addAddressToUser(a),
     addInitialCarAndAddress: (car: Omit<Car, "id">, addr: Omit<Address, "id">) =>
       WasherStore.addInitialCarAndAddress(car, addr),
     createBooking: (d: Parameters<typeof WasherStore.createBooking>[0]) =>

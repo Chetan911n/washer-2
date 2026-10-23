@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { CustomerView } from "@/components/CustomerView";
 import { WasherView } from "@/components/WasherView";
 import { LoginPage } from "@/components/LoginPage";
+import { DEFAULT_CUSTOMER, DEFAULT_WASHER } from "@/lib/defaultData";
 import { Info, Sparkles } from "lucide-react";
 
 export default function Home() {
@@ -19,6 +20,7 @@ export default function Home() {
     logout,
     loginDemo,
     addCarToGarage,
+    addAddressToUser,
     createBooking,
     addBeforePhotos,
     completeJob,
@@ -41,7 +43,7 @@ export default function Home() {
   }
 
   // If user is not logged in, show initial login screen first!
-  if (!user && role === "customer") {
+  if (!user) {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
         <Header
@@ -52,7 +54,24 @@ export default function Home() {
           onLogout={logout}
         />
         <main className="flex-1">
-          <LoginPage onLogin={setUser} onDemoLogin={loginDemo} />
+          <LoginPage
+            onLogin={(u, r) => {
+              setUser(u);
+              if (r) setRole(r);
+            }}
+            onDemoLogin={loginDemo}
+            onWasherLogin={() => {
+              setRole("washer");
+              setUser({
+                ...DEFAULT_CUSTOMER,
+                name: DEFAULT_WASHER.name,
+                username: DEFAULT_WASHER.username,
+                role: "washer",
+                phone: DEFAULT_WASHER.phone,
+                isLoggedIn: true,
+              });
+            }}
+          />
         </main>
       </div>
     );
@@ -110,6 +129,7 @@ export default function Home() {
             user={user}
             bookings={bookings}
             onAddCar={addCarToGarage}
+            onAddAddress={addAddressToUser}
             onCreateBooking={createBooking}
             onPaymentSuccess={markPaymentPaid}
             onSubmitReview={submitReview}
@@ -130,7 +150,7 @@ export default function Home() {
             App Washer • Doorstep Car Wash Platform
           </p>
           <p className="text-[11px] text-slate-400">
-            Phone OTP & Google Auth • Insurance Photos • UPI Payments • Real-Time Reviews
+            Username & Password Auth • Multi-Car Doorstep Wash • UPI Automation
           </p>
         </div>
       </footer>

@@ -25,6 +25,7 @@ interface CustomerViewProps {
   user: User;
   bookings: Booking[];
   onAddCar: (car: Omit<Car, "id">) => void;
+  onAddAddress?: (address: Omit<Address, "id">) => Address;
   onCreateBooking: (data: {
     cars: Car[];
     address: Address;
@@ -48,6 +49,7 @@ export function CustomerView({
   user,
   bookings,
   onAddCar,
+  onAddAddress,
   onCreateBooking,
   onPaymentSuccess,
   onSubmitReview,
@@ -414,6 +416,7 @@ export function CustomerView({
         cars={user.garage}
         addresses={user.addresses}
         onOpenAddCar={() => setIsAddCarOpen(true)}
+        onAddAddress={onAddAddress}
         onConfirmBooking={onCreateBooking}
       />
 

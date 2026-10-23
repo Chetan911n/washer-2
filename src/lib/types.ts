@@ -85,6 +85,8 @@ export interface Booking {
 export interface User {
   id: string;
   name: string;
+  username?: string;
+  password?: string;
   phone: string;
   email: string;
   role: UserRole;
