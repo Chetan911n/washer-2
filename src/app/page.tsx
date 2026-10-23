@@ -19,6 +19,8 @@ export default function Home() {
     stationCrew,
     setRole,
     setUser,
+    registerUser,
+    authenticateUser,
     logout,
     loginDemo,
     addCarToGarage,
@@ -33,6 +35,29 @@ export default function Home() {
   } = useAppWasherStore();
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  // Switch role with synced persona
+  const handleRoleSwitch = (newRole: "customer" | "station_head" | "washer") => {
+    setRole(newRole);
+    if (newRole === "station_head" && user?.role !== "station_head") {
+      setUser({ ...DEFAULT_STATION_HEAD, isLoggedIn: true });
+    } else if (newRole === "washer" && user?.role !== "washer") {
+      setUser({
+        id: DEFAULT_WASHER.id,
+        name: DEFAULT_WASHER.name,
+        username: DEFAULT_WASHER.username,
+        password: DEFAULT_WASHER.password,
+        phone: DEFAULT_WASHER.phone,
+        email: "rajesh.washer@appwasher.com",
+        role: "washer",
+        garage: [],
+        addresses: [],
+        isLoggedIn: true,
+      });
+    } else if (newRole === "customer" && user?.role !== "customer") {
+      setUser({ ...DEFAULT_CUSTOMER, isLoggedIn: true });
+    }
+  };
 
   // If initial local storage sync is loading
   if (!isLoaded) {
@@ -52,7 +77,7 @@ export default function Home() {
       <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
         <Header
           role={role}
-          onRoleChange={setRole}
+          onRoleChange={handleRoleSwitch}
           isLoggedIn={false}
           onOpenAuth={() => setAuthModalOpen(true)}
           onLogout={logout}
@@ -64,6 +89,8 @@ export default function Home() {
               if (r) setRole(r);
             }}
             onDemoLogin={loginDemo}
+            onRegisterUser={registerUser}
+            onAuthenticate={authenticateUser}
             onStationHeadLogin={() => {
               setRole("station_head");
               setUser({ ...DEFAULT_STATION_HEAD, isLoggedIn: true });
@@ -71,11 +98,15 @@ export default function Home() {
             onWasherLogin={() => {
               setRole("washer");
               setUser({
-                ...DEFAULT_CUSTOMER,
+                id: DEFAULT_WASHER.id,
                 name: DEFAULT_WASHER.name,
                 username: DEFAULT_WASHER.username,
-                role: "washer",
+                password: DEFAULT_WASHER.password,
                 phone: DEFAULT_WASHER.phone,
+                email: "rajesh.washer@appwasher.com",
+                role: "washer",
+                garage: [],
+                addresses: [],
                 isLoggedIn: true,
               });
             }}
@@ -90,13 +121,61 @@ export default function Home() {
       {/* Global Header */}
       <Header
         role={role}
-        onRoleChange={setRole}
+        onRoleChange={handleRoleSwitch}
         userName={user?.name || "Partner"}
         userPhone={user?.phone || "+91 91234 56789"}
         isLoggedIn={!!user}
         onOpenAuth={() => setAuthModalOpen(true)}
         onLogout={logout}
       />
+
+      {/* Switch Account Modal */}
+      {authModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200 relative">
+            <button
+              onClick={() => setAuthModalOpen(false)}
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm"
+            >
+              ✕
+            </button>
+            <LoginPage
+              onLogin={(u, r) => {
+                setUser(u);
+                if (r) setRole(r);
+                setAuthModalOpen(false);
+              }}
+              onDemoLogin={(r) => {
+                loginDemo(r);
+                setAuthModalOpen(false);
+              }}
+              onRegisterUser={registerUser}
+              onAuthenticate={authenticateUser}
+              onStationHeadLogin={() => {
+                setRole("station_head");
+                setUser({ ...DEFAULT_STATION_HEAD, isLoggedIn: true });
+                setAuthModalOpen(false);
+              }}
+              onWasherLogin={() => {
+                setRole("washer");
+                setUser({
+                  id: DEFAULT_WASHER.id,
+                  name: DEFAULT_WASHER.name,
+                  username: DEFAULT_WASHER.username,
+                  password: DEFAULT_WASHER.password,
+                  phone: DEFAULT_WASHER.phone,
+                  email: "rajesh.washer@appwasher.com",
+                  role: "washer",
+                  garage: [],
+                  addresses: [],
+                  isLoggedIn: true,
+                });
+                setAuthModalOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Interactive Quick Tour / Testing Banner */}
       <div className="bg-blue-50/90 border-b border-blue-200/80 px-4 py-2.5 text-xs text-blue-900">
@@ -106,21 +185,21 @@ export default function Home() {
             <span>
               <strong>Station Partnership Flow:</strong> 1.{" "}
               <button
-                onClick={() => setRole("customer")}
+                onClick={() => handleRoleSwitch("customer")}
                 className="font-bold underline text-blue-700"
               >
                 Customer books
               </button>{" "}
               → 2.{" "}
               <button
-                onClick={() => setRole("station_head")}
+                onClick={() => handleRoleSwitch("station_head")}
                 className="font-bold underline text-indigo-700"
               >
                 Station Head assigns staff
               </button>{" "}
               → 3.{" "}
               <button
-                onClick={() => setRole("washer")}
+                onClick={() => handleRoleSwitch("washer")}
                 className="font-bold underline text-blue-700"
               >
                 Worker washes & collects cash

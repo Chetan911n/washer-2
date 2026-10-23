@@ -23,10 +23,127 @@ const STORAGE_KEYS = {
   USER: "app_washer_user",
   BOOKINGS: "app_washer_bookings",
   ACTIVE_ROLE: "app_washer_role",
+  USERS: "app_washer_registered_users",
 };
+
+export const INITIAL_REGISTERED_USERS: User[] = [
+  { ...DEFAULT_CUSTOMER, isLoggedIn: true },
+  { ...DEFAULT_STATION_HEAD, isLoggedIn: true },
+  {
+    id: DEFAULT_WASHER.id,
+    name: DEFAULT_WASHER.name,
+    username: DEFAULT_WASHER.username,
+    password: DEFAULT_WASHER.password,
+    phone: DEFAULT_WASHER.phone,
+    email: "rajesh.washer@appwasher.com",
+    role: "washer",
+    garage: [],
+    addresses: [],
+    isLoggedIn: true,
+  },
+  {
+    id: "wash-02",
+    name: "Suresh Verma",
+    username: "suresh",
+    password: "washer123",
+    phone: "+91 92345 67890",
+    email: "suresh.washer@appwasher.com",
+    role: "washer",
+    garage: [],
+    addresses: [],
+    isLoggedIn: true,
+  },
+];
 
 export class WasherStore {
   private static listeners: Set<() => void> = new Set();
+
+  static getRegisteredUsers(): User[] {
+    if (typeof window === "undefined") return INITIAL_REGISTERED_USERS;
+    const stored = localStorage.getItem(STORAGE_KEYS.USERS);
+    if (!stored) {
+      localStorage.setItem(
+        STORAGE_KEYS.USERS,
+        JSON.stringify(INITIAL_REGISTERED_USERS)
+      );
+      return INITIAL_REGISTERED_USERS;
+    }
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return INITIAL_REGISTERED_USERS;
+    }
+  }
+
+  static registerUser(newUser: User): User {
+    const users = this.getRegisteredUsers();
+    const existingIndex = users.findIndex(
+      (u) =>
+        (u.username &&
+          u.username.toLowerCase() === newUser.username?.toLowerCase()) ||
+        u.phone === newUser.phone ||
+        u.email === newUser.email
+    );
+    let updatedUsers: User[];
+    if (existingIndex >= 0) {
+      updatedUsers = users.map((u, i) =>
+        i === existingIndex ? { ...u, ...newUser, isLoggedIn: true } : u
+      );
+    } else {
+      updatedUsers = [...users, { ...newUser, isLoggedIn: true }];
+    }
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updatedUsers));
+    }
+    this.setUser({ ...newUser, isLoggedIn: true });
+    if (newUser.role) {
+      this.setRole(newUser.role);
+    }
+    return newUser;
+  }
+
+  static authenticateUser(params: {
+    identifier: string;
+    password?: string;
+    role?: UserRole;
+  }): { success: boolean; user?: User; error?: string } {
+    const users = this.getRegisteredUsers();
+    const trimmed = params.identifier.trim().toLowerCase();
+    const cleanPhone = params.identifier.replace(/\D/g, "");
+
+    const matched = users.find((u) => {
+      const matchUsername = u.username?.toLowerCase() === trimmed;
+      const matchEmail = u.email?.toLowerCase() === trimmed;
+      const matchPhone =
+        cleanPhone.length >= 10 &&
+        u.phone.replace(/\D/g, "").includes(cleanPhone);
+      return matchUsername || matchEmail || matchPhone;
+    });
+
+    if (!matched) {
+      return {
+        success: false,
+        error: `Account "${params.identifier}" not found. For testing, use demo account: chetan / password123`,
+      };
+    }
+
+    if (
+      params.password !== undefined &&
+      matched.password &&
+      matched.password !== params.password
+    ) {
+      return {
+        success: false,
+        error: `Incorrect password for ${matched.name}. Demo password is "${matched.password}".`,
+      };
+    }
+
+    const finalRole = params.role || matched.role || "customer";
+    const loggedInUser: User = { ...matched, role: finalRole, isLoggedIn: true };
+    this.setUser(loggedInUser);
+    this.setRole(finalRole);
+    return { success: true, user: loggedInUser };
+  }
 
   static getUser(): User | null {
     if (typeof window === "undefined") return null;
@@ -380,6 +497,9 @@ export function useAppWasherStore() {
     stationCrew: STATION_CREW,
     setRole: (r: UserRole) => WasherStore.setRole(r),
     setUser: (u: User | null) => WasherStore.setUser(u),
+    registerUser: (u: User) => WasherStore.registerUser(u),
+    authenticateUser: (params: Parameters<typeof WasherStore.authenticateUser>[0]) =>
+      WasherStore.authenticateUser(params),
     logout: () => WasherStore.logout(),
     loginDemo: (r: UserRole = "customer") => WasherStore.loginDemo(r),
     addCarToGarage: (c: Omit<Car, "id">) => WasherStore.addCarToGarage(c),
