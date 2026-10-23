@@ -19,12 +19,15 @@ import {
   Star,
   Smartphone,
   Flame,
+  Trash2,
 } from "lucide-react";
 
 interface CustomerViewProps {
   user: User;
   bookings: Booking[];
   onAddCar: (car: Omit<Car, "id">) => void;
+  onRemoveCar?: (carId: string) => void;
+  onRemoveAllCars?: () => void;
   onAddAddress?: (address: Omit<Address, "id">) => Address;
   onCreateBooking: (data: {
     cars: Car[];
@@ -49,6 +52,8 @@ export function CustomerView({
   user,
   bookings,
   onAddCar,
+  onRemoveCar,
+  onRemoveAllCars,
   onAddAddress,
   onCreateBooking,
   onPaymentSuccess,
@@ -331,54 +336,107 @@ export function CustomerView({
           <div>
             <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
               <CarIcon className="w-4 h-4 text-blue-600" />
-              <span>My Garage ({user.garage.length} Cars)</span>
+              <span>My Garage ({user.garage?.length || 0} Cars)</span>
             </h3>
             <p className="text-[11px] text-slate-500">
-              Select any of these when booking a doorstep wash
+              {user.garage && user.garage.length > 0
+                ? "Select any of these when booking a doorstep wash"
+                : "No vehicles saved yet. Add your car to book a doorstep wash!"}
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsAddCarOpen(true)}
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-2.5 py-1.5 rounded-xl flex items-center gap-1"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Car</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {user.garage && user.garage.length > 0 && onRemoveAllCars && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("Are you sure you want to remove all cars from your garage?")) {
+                    onRemoveAllCars();
+                  }
+                }}
+                className="text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Remove All</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setIsAddCarOpen(true)}
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Car</span>
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {user.garage.map((car) => (
-            <div
-              key={car.id}
-              className="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-sm hover:shadow-md transition-shadow relative"
+        {(!user.garage || user.garage.length === 0) ? (
+          <div className="p-8 border-2 border-dashed border-slate-200 rounded-3xl text-center bg-white space-y-3 shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center text-xl">
+              🚗
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-slate-800">Your Garage is Empty</h4>
+              <p className="text-xs text-slate-500 mt-0.5 max-w-sm mx-auto">
+                All previous cars have been removed. Add your vehicle details to start booking doorstep car washes.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAddCarOpen(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors"
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900">
-                    {car.name}
-                  </h4>
-                  <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                    {car.type}
+              <Plus className="w-4 h-4" />
+              <span>Add Your Car</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {user.garage.map((car) => (
+              <div
+                key={car.id}
+                className="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-sm hover:shadow-md transition-shadow relative group"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900">
+                      {car.name}
+                    </h4>
+                    <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                      {car.type}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {onRemoveCar && (
+                      <button
+                        type="button"
+                        onClick={() => onRemoveCar(car.id)}
+                        title="Remove Car"
+                        className="p-1.5 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
+                      🚗
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="font-mono font-bold text-slate-600">
+                    {car.carNumber}
+                  </span>
+                  <span className="text-slate-400 text-[11px]">
+                    {car.color || "Color"}
                   </span>
                 </div>
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
-                  🚗
-                </div>
               </div>
-
-              <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="font-mono font-bold text-slate-600">
-                  {car.carNumber}
-                </span>
-                <span className="text-slate-400 text-[11px]">
-                  {car.color || "Color"}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Saved Addresses Section */}

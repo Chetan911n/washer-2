@@ -6,7 +6,6 @@ import {
   DEFAULT_CUSTOMER,
   DEFAULT_WASHER,
   DEFAULT_STATION_HEAD,
-  INITIAL_CARS,
   INITIAL_ADDRESSES,
 } from "@/lib/defaultData";
 import { WasherStore } from "@/lib/store";
@@ -197,7 +196,7 @@ export function LoginPage({
         phone: "+91 " + cleanPhone,
         email: `cust_${cleanPhone}@appwasher.com`,
         role: "customer",
-        garage: INITIAL_CARS,
+        garage: [],
         addresses: INITIAL_ADDRESSES,
         isLoggedIn: true,
       };
@@ -218,7 +217,7 @@ export function LoginPage({
       phone: "+91 98765 43210",
       email: "chetan.sharma@gmail.com",
       role: "customer",
-      garage: INITIAL_CARS,
+      garage: [],
       addresses: INITIAL_ADDRESSES,
       isLoggedIn: true,
     };
@@ -881,7 +880,7 @@ export function LoginPage({
                       onClick={() => onDemoLogin("customer")}
                       className="w-full py-1.5 text-[11px] text-slate-500 hover:text-slate-700 underline text-center block"
                     >
-                      Skip setup & use default garage cars
+                      Skip car setup for now (Add cars later)
                     </button>
                   </div>
                 </form>

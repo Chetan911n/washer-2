@@ -149,57 +149,75 @@ export function BookingModal({
           </div>
 
           <div className="space-y-2">
-            {cars.map((car) => {
-              const isSelected = selectedCarIds.includes(car.id);
-              const price = CAR_PRICING[car.type] || 399;
-              return (
-                <div
-                  key={car.id}
-                  onClick={() => toggleCar(car.id)}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                    isSelected
-                      ? "border-blue-600 bg-blue-50/60 shadow-sm ring-1 ring-blue-600"
-                      : "border-slate-200 hover:border-slate-300 bg-white"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
-                        isSelected
-                          ? "bg-blue-600 border-blue-600 text-white"
-                          : "border-slate-300 bg-white"
-                      }`}
-                    >
-                      {isSelected && <Check className="w-3.5 h-3.5" />}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-slate-900">
-                          {car.name}
-                        </span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">
-                          {car.type}
-                        </span>
-                      </div>
-                      <p className="text-xs font-mono text-slate-500">
-                        {car.carNumber} • {car.color || "Color"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${
-                        isSelected
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
-                      {isSelected ? "Selected" : "Tap to Add"}
-                    </span>
-                  </div>
+            {cars.length === 0 ? (
+              <div className="p-5 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-2.5 bg-slate-50/80">
+                <CarIcon className="w-8 h-8 text-slate-400 mx-auto" />
+                <div>
+                  <p className="text-xs font-bold text-slate-700">No cars in your garage</p>
+                  <p className="text-[11px] text-slate-500">Please add your vehicle to proceed with booking.</p>
                 </div>
-              );
-            })}
+                <button
+                  type="button"
+                  onClick={onOpenAddCar}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Your Car Now</span>
+                </button>
+              </div>
+            ) : (
+              cars.map((car) => {
+                const isSelected = selectedCarIds.includes(car.id);
+                const price = CAR_PRICING[car.type] || 399;
+                return (
+                  <div
+                    key={car.id}
+                    onClick={() => toggleCar(car.id)}
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                      isSelected
+                        ? "border-blue-600 bg-blue-50/60 shadow-sm ring-1 ring-blue-600"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
+                          isSelected
+                            ? "bg-blue-600 border-blue-600 text-white"
+                            : "border-slate-300 bg-white"
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3.5 h-3.5" />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-slate-900">
+                            {car.name}
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">
+                            {car.type}
+                          </span>
+                        </div>
+                        <p className="text-xs font-mono text-slate-500">
+                          {car.carNumber} • {car.color || "Color"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${
+                          isSelected
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {isSelected ? "Selected" : "Tap to Add"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {selectedCars.length > 1 && (
@@ -444,9 +462,13 @@ export function BookingModal({
           <button
             type="submit"
             disabled={selectedCars.length === 0 || !selectedAddress}
-            className="py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl text-sm transition-all shadow-md shadow-blue-500/20"
+            className={`py-3 px-6 rounded-xl text-sm font-extrabold transition-all ${
+              selectedCars.length === 0 || !selectedAddress
+                ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20"
+            }`}
           >
-            Confirm & Book Slot
+            {selectedCars.length === 0 ? "Select a Car to Book" : "Confirm & Book Slot"}
           </button>
         </div>
       </form>

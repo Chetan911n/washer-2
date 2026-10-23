@@ -8,29 +8,7 @@ export const CAR_PRICING: Record<string, number> = {
   Luxury: 799,
 };
 
-export const INITIAL_CARS: Car[] = [
-  {
-    id: "car-1",
-    name: "Hyundai Creta SX",
-    type: "SUV",
-    carNumber: "KA 05 MN 4589",
-    color: "Polar White",
-  },
-  {
-    id: "car-2",
-    name: "Honda City V",
-    type: "Sedan",
-    carNumber: "KA 01 EK 9021",
-    color: "Golden Brown",
-  },
-  {
-    id: "car-3",
-    name: "Maruti Swift ZXi",
-    type: "Hatchback",
-    carNumber: "KA 03 HQ 1122",
-    color: "Fire Red",
-  },
-];
+export const INITIAL_CARS: Car[] = [];
 
 export const INITIAL_ADDRESSES: Address[] = [
   {
@@ -59,7 +37,7 @@ export const DEFAULT_CUSTOMER: User = {
   phone: "+91 98765 43210",
   email: "chetan@example.com",
   role: "customer",
-  garage: INITIAL_CARS,
+  garage: [],
   addresses: INITIAL_ADDRESSES,
 };
 
@@ -114,25 +92,4 @@ export const DEFAULT_WASHER = {
   avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
 };
 
-export const INITIAL_BOOKINGS: Booking[] = [
-  {
-    id: "book-101",
-    bookingCode: "CW-8421",
-    customerId: "cust-01",
-    customerName: "Chetan Sharma",
-    customerPhone: "+91 98765 43210",
-    address: INITIAL_ADDRESSES[0],
-    date: "2026-10-24",
-    timeSlot: "07:30 AM - 09:00 AM",
-    cars: [INITIAL_CARS[0], INITIAL_CARS[1]],
-    washType: "Exterior Foam Wash",
-    totalAmount: 998,
-    status: "ASSIGNED_TO_STATION", // Station Head needs to assign to a worker under them!
-    stationId: "station-01",
-    stationName: "SpeedShine Central Hub",
-    washer: DEFAULT_WASHER,
-    beforePhotos: [],
-    afterPhotos: [],
-    createdAt: new Date().toISOString(),
-  },
-];
+export const INITIAL_BOOKINGS: Booking[] = [];
