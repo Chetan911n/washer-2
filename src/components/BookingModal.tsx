@@ -187,12 +187,15 @@ export function BookingModal({
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="font-bold text-sm text-slate-900">
-                      ₹{price}
+                    <span
+                      className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${
+                        isSelected
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {isSelected ? "Selected" : "Tap to Add"}
                     </span>
-                    <p className="text-[10px] text-green-600 font-semibold">
-                      Foam Wash
-                    </p>
                   </div>
                 </div>
               );
@@ -424,19 +427,24 @@ export function BookingModal({
           </div>
         )}
 
-        {/* Total & Confirm CTA */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+        {/* Total & Confirm CTA (Total shown only at the end) */}
+        <div className="pt-3 border-t border-slate-100 flex items-center justify-between bg-slate-50 -mx-5 -mb-5 p-4 rounded-b-2xl">
           <div>
-            <span className="text-[10px] text-slate-400 uppercase font-semibold">
-              Total ({selectedCars.length} {selectedCars.length === 1 ? "car" : "cars"})
+            <span className="text-[11px] text-slate-500 font-semibold block">
+              Combined Total ({selectedCars.length} {selectedCars.length === 1 ? "car" : "cars"})
             </span>
-            <div className="text-xl font-black text-slate-900">₹{totalAmount}</div>
+            <div className="text-2xl font-black text-slate-900 leading-none mt-1">
+              ₹{totalAmount}
+            </div>
+            <span className="text-[10px] text-green-700 font-semibold">
+              All taxes & doorstep visit included
+            </span>
           </div>
 
           <button
             type="submit"
             disabled={selectedCars.length === 0 || !selectedAddress}
-            className="py-2.5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-blue-500/20"
+            className="py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl text-sm transition-all shadow-md shadow-blue-500/20"
           >
             Confirm & Book Slot
           </button>

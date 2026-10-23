@@ -1,4 +1,4 @@
-export type UserRole = "customer" | "washer";
+export type UserRole = "customer" | "station_head" | "washer";
 
 export type CarType = "Hatchback" | "Sedan" | "SUV" | "Compact SUV" | "Luxury";
 
@@ -31,8 +31,28 @@ export interface InspectionPhoto {
   notes?: string;
 }
 
+export interface StationWorker {
+  id: string;
+  name: string;
+  phone: string;
+  completedJobs: number;
+  avatarUrl?: string;
+}
+
+export interface SettlementRecord {
+  totalCollected: number;
+  stationShare: number; // Commission kept by station head/washers
+  platformShare: number; // Online fee transferred to app platform
+  paymentMethod: "CASH" | "UPI";
+  isSettledOnline: boolean;
+  settledAt?: string;
+  onlineTransferRef?: string;
+}
+
 export type BookingStatus =
   | "PENDING"
+  | "ASSIGNED_TO_STATION" // Job assigned to Station Head
+  | "ASSIGNED_TO_WORKER"  // Station Head delegated to on-site washer
   | "WASHER_ASSIGNED"
   | "INSPECTION_PENDING"
   | "WASH_IN_PROGRESS"
@@ -54,6 +74,9 @@ export interface Booking {
   washType: "Exterior Foam Wash" | "Deep Wash & Polish" | "Interior + Exterior";
   totalAmount: number;
   status: BookingStatus;
+  stationId?: string;
+  stationName?: string;
+  assignedWorker?: StationWorker;
   washer?: {
     id: string;
     name: string;
@@ -66,12 +89,13 @@ export interface Booking {
   whatsappSentAt?: string;
   payment?: {
     amount: number;
-    method: "UPI";
+    method: "UPI" | "CASH";
     transactionRef?: string;
-    upiId: string;
+    upiId?: string;
     paidAt?: string;
     status: "PENDING" | "SUCCESS";
   };
+  settlement?: SettlementRecord;
   review?: {
     rating: number;
     tags: string[];
@@ -90,6 +114,8 @@ export interface User {
   phone: string;
   email: string;
   role: UserRole;
+  stationName?: string;
+  stationCrew?: StationWorker[];
   garage: Car[];
   addresses: Address[];
   isLoggedIn?: boolean;

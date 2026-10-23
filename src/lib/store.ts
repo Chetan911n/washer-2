@@ -1,8 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Booking, Car, Address, User, UserRole, InspectionPhoto } from "./types";
-import { DEFAULT_CUSTOMER, DEFAULT_WASHER, INITIAL_BOOKINGS, CAR_PRICING } from "./defaultData";
+import {
+  Booking,
+  Car,
+  Address,
+  User,
+  UserRole,
+  InspectionPhoto,
+  StationWorker,
+} from "./types";
+import {
+  DEFAULT_CUSTOMER,
+  DEFAULT_WASHER,
+  DEFAULT_STATION_HEAD,
+  INITIAL_BOOKINGS,
+  CAR_PRICING,
+  STATION_CREW,
+} from "./defaultData";
 
 const STORAGE_KEYS = {
   USER: "app_washer_user",
@@ -43,8 +58,24 @@ export class WasherStore {
     this.setUser(null);
   }
 
-  static loginDemo() {
-    this.setUser({ ...DEFAULT_CUSTOMER, isLoggedIn: true });
+  static loginDemo(role: UserRole = "customer") {
+    if (role === "station_head") {
+      this.setUser({ ...DEFAULT_STATION_HEAD, isLoggedIn: true });
+      this.setRole("station_head");
+    } else if (role === "washer") {
+      this.setUser({
+        ...DEFAULT_CUSTOMER,
+        name: DEFAULT_WASHER.name,
+        username: DEFAULT_WASHER.username,
+        role: "washer",
+        phone: DEFAULT_WASHER.phone,
+        isLoggedIn: true,
+      });
+      this.setRole("washer");
+    } else {
+      this.setUser({ ...DEFAULT_CUSTOMER, isLoggedIn: true });
+      this.setRole("customer");
+    }
   }
 
   static getRole(): UserRole {
@@ -100,16 +131,6 @@ export class WasherStore {
     return newAddr;
   }
 
-  static addInitialCarAndAddress(car: Omit<Car, "id">, address: Omit<Address, "id">) {
-    const user = this.getUser();
-    if (!user) return;
-    const newCar: Car = { ...car, id: "car-" + Date.now() };
-    const newAddr: Address = { ...address, id: "addr-" + Date.now() };
-    user.garage = [newCar];
-    user.addresses = [newAddr];
-    this.setUser(user);
-  }
-
   static createBooking(data: {
     cars: Car[];
     address: Address;
@@ -135,8 +156,9 @@ export class WasherStore {
       cars: data.cars,
       washType: data.washType,
       totalAmount,
-      status: "WASHER_ASSIGNED",
-      washer: DEFAULT_WASHER,
+      status: "ASSIGNED_TO_STATION", // Goes directly to Station Head for dispatch!
+      stationId: "station-01",
+      stationName: "SpeedShine Central Hub",
       beforePhotos: [],
       afterPhotos: [],
       createdAt: new Date().toISOString(),
@@ -145,6 +167,28 @@ export class WasherStore {
     const bookings = [newBooking, ...this.getBookings()];
     this.setBookings(bookings);
     return newBooking;
+  }
+
+  // Station Head assigns job to a specific crew member/technician
+  static assignBookingToWorker(bookingId: string, worker: StationWorker) {
+    const bookings = this.getBookings().map((b) => {
+      if (b.id === bookingId) {
+        return {
+          ...b,
+          assignedWorker: worker,
+          washer: {
+            id: worker.id,
+            name: worker.name,
+            phone: worker.phone,
+            rating: 4.92,
+            avatarUrl: worker.avatarUrl || DEFAULT_WASHER.avatarUrl,
+          },
+          status: "ASSIGNED_TO_WORKER" as const,
+        };
+      }
+      return b;
+    });
+    this.setBookings(bookings);
   }
 
   static addBeforePhotos(bookingId: string, photos: InspectionPhoto[]) {
@@ -198,19 +242,54 @@ export class WasherStore {
     return completedBooking;
   }
 
-  static markPaymentPaid(bookingId: string, transactionRef?: string) {
+  static markPaymentPaid(
+    bookingId: string,
+    method: "UPI" | "CASH" = "UPI",
+    transactionRef?: string
+  ) {
     const bookings = this.getBookings().map((b) => {
       if (b.id === bookingId) {
+        const platformShare = Math.round(b.totalAmount * 0.2); // 20% App platform fee
+        const stationShare = b.totalAmount - platformShare; // 80% Station Head & Washer earnings
+
         return {
           ...b,
           status: "PAID" as const,
           payment: {
             amount: b.totalAmount,
-            method: "UPI" as const,
-            transactionRef: transactionRef || "UPI" + Date.now().toString().slice(-8),
-            upiId: "washerpay@okhdfcbank",
+            method,
+            transactionRef:
+              transactionRef || (method === "CASH" ? "CASH-REC-" : "UPI-") + Date.now().toString().slice(-6),
+            upiId: method === "UPI" ? "washerpay@okhdfcbank" : undefined,
             paidAt: new Date().toISOString(),
             status: "SUCCESS" as const,
+          },
+          settlement: {
+            totalCollected: b.totalAmount,
+            stationShare,
+            platformShare,
+            paymentMethod: method,
+            isSettledOnline: method === "UPI", // If customer paid online, already settled; if cash, station head settles online
+          },
+        };
+      }
+      return b;
+    });
+    this.setBookings(bookings);
+  }
+
+  // Station Head settles the online payment to the app owner
+  static settlePlatformShareOnline(bookingId: string, transferRef?: string) {
+    const bookings = this.getBookings().map((b) => {
+      if (b.id === bookingId && b.settlement) {
+        return {
+          ...b,
+          settlement: {
+            ...b.settlement,
+            isSettledOnline: true,
+            settledAt: new Date().toISOString(),
+            onlineTransferRef:
+              transferRef || "NEFT-APP-" + Date.now().toString().slice(-6),
           },
         };
       }
@@ -298,22 +377,26 @@ export function useAppWasherStore() {
     isLoaded,
     role,
     bookings,
+    stationCrew: STATION_CREW,
     setRole: (r: UserRole) => WasherStore.setRole(r),
     setUser: (u: User | null) => WasherStore.setUser(u),
     logout: () => WasherStore.logout(),
-    loginDemo: () => WasherStore.loginDemo(),
+    loginDemo: (r: UserRole = "customer") => WasherStore.loginDemo(r),
     addCarToGarage: (c: Omit<Car, "id">) => WasherStore.addCarToGarage(c),
     addAddressToUser: (a: Omit<Address, "id">) => WasherStore.addAddressToUser(a),
-    addInitialCarAndAddress: (car: Omit<Car, "id">, addr: Omit<Address, "id">) =>
-      WasherStore.addInitialCarAndAddress(car, addr),
     createBooking: (d: Parameters<typeof WasherStore.createBooking>[0]) =>
       WasherStore.createBooking(d),
+    assignBookingToWorker: (bookingId: string, worker: StationWorker) =>
+      WasherStore.assignBookingToWorker(bookingId, worker),
     addBeforePhotos: (id: string, p: InspectionPhoto[]) =>
       WasherStore.addBeforePhotos(id, p),
     updateAfterPhotos: (id: string, p: InspectionPhoto[]) =>
       WasherStore.updateAfterPhotos(id, p),
     completeJob: (id: string, p: InspectionPhoto[]) => WasherStore.completeJob(id, p),
-    markPaymentPaid: (id: string, ref?: string) => WasherStore.markPaymentPaid(id, ref),
+    markPaymentPaid: (id: string, method?: "UPI" | "CASH", ref?: string) =>
+      WasherStore.markPaymentPaid(id, method, ref),
+    settlePlatformShareOnline: (id: string, ref?: string) =>
+      WasherStore.settlePlatformShareOnline(id, ref),
     submitReview: (id: string, r: Parameters<typeof WasherStore.submitReview>[1]) =>
       WasherStore.submitReview(id, r),
   };

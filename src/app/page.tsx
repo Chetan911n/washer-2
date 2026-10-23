@@ -4,10 +4,11 @@ import React, { useState } from "react";
 import { useAppWasherStore } from "@/lib/store";
 import { Header } from "@/components/Header";
 import { CustomerView } from "@/components/CustomerView";
+import { StationHeadView } from "@/components/StationHeadView";
 import { WasherView } from "@/components/WasherView";
 import { LoginPage } from "@/components/LoginPage";
-import { DEFAULT_CUSTOMER, DEFAULT_WASHER } from "@/lib/defaultData";
-import { Info, Sparkles } from "lucide-react";
+import { DEFAULT_CUSTOMER, DEFAULT_WASHER, DEFAULT_STATION_HEAD } from "@/lib/defaultData";
+import { Info, Sparkles, Building2, ShieldCheck, Car } from "lucide-react";
 
 export default function Home() {
   const {
@@ -15,6 +16,7 @@ export default function Home() {
     isLoaded,
     role,
     bookings,
+    stationCrew,
     setRole,
     setUser,
     logout,
@@ -22,9 +24,11 @@ export default function Home() {
     addCarToGarage,
     addAddressToUser,
     createBooking,
+    assignBookingToWorker,
     addBeforePhotos,
     completeJob,
     markPaymentPaid,
+    settlePlatformShareOnline,
     submitReview,
   } = useAppWasherStore();
 
@@ -60,6 +64,10 @@ export default function Home() {
               if (r) setRole(r);
             }}
             onDemoLogin={loginDemo}
+            onStationHeadLogin={() => {
+              setRole("station_head");
+              setUser({ ...DEFAULT_STATION_HEAD, isLoggedIn: true });
+            }}
             onWasherLogin={() => {
               setRole("washer");
               setUser({
@@ -91,32 +99,42 @@ export default function Home() {
       />
 
       {/* Interactive Quick Tour / Testing Banner */}
-      <div className="bg-blue-50/90 border-b border-blue-200/80 px-4 py-2 text-xs text-blue-900">
+      <div className="bg-blue-50/90 border-b border-blue-200/80 px-4 py-2.5 text-xs text-blue-900">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Info className="w-4 h-4 text-blue-600 shrink-0" />
             <span>
-              <strong>Dual-Role Testing:</strong> Toggle between{" "}
+              <strong>Station Partnership Flow:</strong> 1.{" "}
               <button
                 onClick={() => setRole("customer")}
-                className="font-bold underline text-blue-700 hover:text-blue-900"
+                className="font-bold underline text-blue-700"
               >
-                Customer
+                Customer books
               </button>{" "}
-              and{" "}
+              → 2.{" "}
+              <button
+                onClick={() => setRole("station_head")}
+                className="font-bold underline text-indigo-700"
+              >
+                Station Head assigns staff
+              </button>{" "}
+              → 3.{" "}
               <button
                 onClick={() => setRole("washer")}
-                className="font-bold underline text-blue-700 hover:text-blue-900"
+                className="font-bold underline text-blue-700"
               >
-                Washer App
+                Worker washes & collects cash
               </button>{" "}
-              at the top bar to test the end-to-end flow!
+              → 4. Station settles platform fee online!
             </span>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            <span className="text-[11px] text-blue-700 bg-white px-2 py-0.5 rounded-full border border-blue-200 font-medium">
-              Mode: <strong className="capitalize">{role}</strong>
+          <div className="flex items-center gap-1.5 self-end sm:self-auto">
+            <span className="text-[11px] text-blue-800 bg-white px-2 py-0.5 rounded-full border border-blue-200 font-semibold flex items-center gap-1">
+              {role === "customer" && <Car className="w-3 h-3 text-blue-600" />}
+              {role === "station_head" && <Building2 className="w-3 h-3 text-indigo-600" />}
+              {role === "washer" && <ShieldCheck className="w-3 h-3 text-green-600" />}
+              <span className="capitalize">{role.replace("_", " ")} Mode</span>
             </span>
           </div>
         </div>
@@ -131,14 +149,22 @@ export default function Home() {
             onAddCar={addCarToGarage}
             onAddAddress={addAddressToUser}
             onCreateBooking={createBooking}
-            onPaymentSuccess={markPaymentPaid}
+            onPaymentSuccess={(id, ref) => markPaymentPaid(id, "UPI", ref)}
             onSubmitReview={submitReview}
+          />
+        ) : role === "station_head" ? (
+          <StationHeadView
+            bookings={bookings}
+            stationCrew={stationCrew}
+            onAssignWorker={assignBookingToWorker}
+            onSettleOnline={settlePlatformShareOnline}
           />
         ) : (
           <WasherView
             bookings={bookings}
             onSaveBeforePhotos={addBeforePhotos}
             onCompleteJob={completeJob}
+            onCollectPayment={markPaymentPaid}
           />
         )}
       </main>
@@ -147,10 +173,10 @@ export default function Home() {
       <footer className="mt-auto border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
         <div className="max-w-4xl mx-auto px-4 space-y-1.5">
           <p className="font-semibold text-slate-700">
-            App Washer • Doorstep Car Wash Platform
+            App Washer • Washing Station Partner Network
           </p>
           <p className="text-[11px] text-slate-400">
-            Username & Password Auth • Multi-Car Doorstep Wash • UPI Automation
+            Station Head Dispatch • Technician On-Site Inspection • Cash Collection & Online Platform Settlement
           </p>
         </div>
       </footer>

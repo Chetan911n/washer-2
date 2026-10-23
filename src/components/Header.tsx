@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Sparkles, ShieldCheck, Car, LogOut, LogIn } from "lucide-react";
+import { Sparkles, ShieldCheck, Car, LogOut, LogIn, Building2 } from "lucide-react";
 import { UserRole } from "@/lib/types";
 
 interface HeaderProps {
@@ -37,38 +37,51 @@ export function Header({
                 AppWasher
               </span>
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 uppercase tracking-wider">
-                Live
+                Partner Hub
               </span>
             </div>
             <p className="text-xs text-slate-500 hidden sm:block">
-              Doorstep Car Wash • UPI & Photo Verified
+              Station Head • Crew Dispatch • Cash Settlement
             </p>
           </div>
         </div>
 
-        {/* Role Toggle Switcher */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+        {/* 3-Role Switcher: Customer | Station Head | Washer */}
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
           <button
             onClick={() => onRoleChange("customer")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
               role === "customer"
-                ? "bg-white text-blue-700 shadow-sm"
+                ? "bg-white text-blue-700 shadow-sm font-bold"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <Car className="w-3.5 h-3.5" />
-            <span>Customer</span>
+            <span className="hidden sm:inline">Customer</span>
           </button>
+
+          <button
+            onClick={() => onRoleChange("station_head")}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
+              role === "station_head"
+                ? "bg-indigo-600 text-white shadow-sm font-bold"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Station Head</span>
+          </button>
+
           <button
             onClick={() => onRoleChange("washer")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
               role === "washer"
-                ? "bg-blue-600 text-white shadow-sm"
+                ? "bg-blue-600 text-white shadow-sm font-bold"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Washer App</span>
+            <span className="hidden sm:inline">Field Washer</span>
           </button>
         </div>
 
