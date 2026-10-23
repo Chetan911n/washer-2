@@ -13,24 +13,38 @@ const STORAGE_KEYS = {
 export class WasherStore {
   private static listeners: Set<() => void> = new Set();
 
-  static getUser(): User {
-    if (typeof window === "undefined") return DEFAULT_CUSTOMER;
+  static getUser(): User | null {
+    if (typeof window === "undefined") return null;
     const stored = localStorage.getItem(STORAGE_KEYS.USER);
-    if (!stored) {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(DEFAULT_CUSTOMER));
-      return DEFAULT_CUSTOMER;
-    }
+    if (!stored) return null;
     try {
-      return JSON.parse(stored);
+      const user = JSON.parse(stored);
+      if (!user.isLoggedIn) return null;
+      return user;
     } catch {
-      return DEFAULT_CUSTOMER;
+      return null;
     }
   }
 
-  static setUser(user: User) {
+  static setUser(user: User | null) {
     if (typeof window === "undefined") return;
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    if (!user) {
+      localStorage.removeItem(STORAGE_KEYS.USER);
+    } else {
+      localStorage.setItem(
+        STORAGE_KEYS.USER,
+        JSON.stringify({ ...user, isLoggedIn: true })
+      );
+    }
     this.notify();
+  }
+
+  static logout() {
+    this.setUser(null);
+  }
+
+  static loginDemo() {
+    this.setUser({ ...DEFAULT_CUSTOMER, isLoggedIn: true });
   }
 
   static getRole(): UserRole {
@@ -65,7 +79,7 @@ export class WasherStore {
   }
 
   static addCarToGarage(car: Omit<Car, "id">): Car {
-    const user = this.getUser();
+    const user = this.getUser() || { ...DEFAULT_CUSTOMER, isLoggedIn: true, garage: [], addresses: [] };
     const newCar: Car = {
       ...car,
       id: "car-" + Date.now(),
@@ -75,6 +89,16 @@ export class WasherStore {
     return newCar;
   }
 
+  static addInitialCarAndAddress(car: Omit<Car, "id">, address: Omit<Address, "id">) {
+    const user = this.getUser();
+    if (!user) return;
+    const newCar: Car = { ...car, id: "car-" + Date.now() };
+    const newAddr: Address = { ...address, id: "addr-" + Date.now() };
+    user.garage = [newCar];
+    user.addresses = [newAddr];
+    this.setUser(user);
+  }
+
   static createBooking(data: {
     cars: Car[];
     address: Address;
@@ -82,7 +106,7 @@ export class WasherStore {
     timeSlot: string;
     washType: Booking["washType"];
   }): Booking {
-    const user = this.getUser();
+    const user = this.getUser() || DEFAULT_CUSTOMER;
     const totalAmount = data.cars.reduce(
       (sum, car) => sum + (CAR_PRICING[car.type] || 399),
       0
@@ -225,7 +249,8 @@ export class WasherStore {
 }
 
 export function useAppWasherStore() {
-  const [user, setUser] = useState<User>(DEFAULT_CUSTOMER);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [role, setRole] = useState<UserRole>("customer");
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
 
@@ -234,6 +259,7 @@ export function useAppWasherStore() {
       setUser(WasherStore.getUser());
       setRole(WasherStore.getRole());
       setBookings(WasherStore.getBookings());
+      setIsLoaded(true);
     };
 
     sync();
@@ -258,11 +284,16 @@ export function useAppWasherStore() {
 
   return {
     user,
+    isLoaded,
     role,
     bookings,
     setRole: (r: UserRole) => WasherStore.setRole(r),
-    setUser: (u: User) => WasherStore.setUser(u),
+    setUser: (u: User | null) => WasherStore.setUser(u),
+    logout: () => WasherStore.logout(),
+    loginDemo: () => WasherStore.loginDemo(),
     addCarToGarage: (c: Omit<Car, "id">) => WasherStore.addCarToGarage(c),
+    addInitialCarAndAddress: (car: Omit<Car, "id">, addr: Omit<Address, "id">) =>
+      WasherStore.addInitialCarAndAddress(car, addr),
     createBooking: (d: Parameters<typeof WasherStore.createBooking>[0]) =>
       WasherStore.createBooking(d),
     addBeforePhotos: (id: string, p: InspectionPhoto[]) =>

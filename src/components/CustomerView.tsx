@@ -1,18 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { User, Booking, Car, Address, InspectionPhoto } from "@/lib/types";
+import { User, Booking, Car, Address } from "@/lib/types";
 import { BookingModal } from "./BookingModal";
 import { AddCarModal } from "./AddCarModal";
 import { PaymentModal } from "./PaymentModal";
-import { ReviewModal } from "./ReviewModal";
+import { ReviewPage } from "./ReviewPage";
 import { UiDialog } from "./UiDialog";
 import {
   Sparkles,
   Plus,
   Car as CarIcon,
   MapPin,
-  Clock,
   ShieldCheck,
   CheckCircle2,
   ChevronRight,
@@ -53,12 +52,12 @@ export function CustomerView({
   onPaymentSuccess,
   onSubmitReview,
 }: CustomerViewProps) {
-  // Modal states
+  const [currentView, setCurrentView] = useState<"home" | "review">("home");
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
   const [activePaymentBooking, setActivePaymentBooking] =
     useState<Booking | null>(null);
-  const [activeReviewBooking, setActiveReviewBooking] =
+  const [reviewBookingTarget, setReviewBookingTarget] =
     useState<Booking | null>(null);
   const [viewingPhotosBooking, setViewingPhotosBooking] =
     useState<Booking | null>(null);
@@ -68,7 +67,7 @@ export function CustomerView({
     (b) => b.status !== "REVIEWED"
   );
 
-  // Real-time auto-open payment modal when job is completed by washer!
+  // Auto-trigger payment modal when job is completed by washer!
   useEffect(() => {
     const paymentNeeded = bookings.find((b) => b.status === "PAYMENT_PENDING");
     if (paymentNeeded && (!activePaymentBooking || activePaymentBooking.id !== paymentNeeded.id)) {
@@ -76,16 +75,70 @@ export function CustomerView({
     }
   }, [bookings, activePaymentBooking]);
 
-  // Real-time auto-open review modal when payment succeeds!
-  useEffect(() => {
-    const reviewNeeded = bookings.find((b) => b.status === "PAID");
-    if (reviewNeeded && (!activeReviewBooking || activeReviewBooking.id !== reviewNeeded.id)) {
-      setActiveReviewBooking(reviewNeeded);
+  // Handler when user finishes paying via UPI in PaymentModal
+  const handlePaymentCompleted = (bookingId: string, ref: string) => {
+    onPaymentSuccess(bookingId, ref);
+    setActivePaymentBooking(null);
+
+    // Immediately navigate to Review Page!
+    const target = bookings.find((b) => b.id === bookingId) || activeBooking;
+    if (target) {
+      setReviewBookingTarget(target);
+      setCurrentView("review");
     }
-  }, [bookings, activeReviewBooking]);
+  };
+
+  // If in review view, render the dedicated Review Page!
+  if (currentView === "review" && (reviewBookingTarget || activeBooking)) {
+    const target = reviewBookingTarget || activeBooking!;
+    return (
+      <ReviewPage
+        booking={target}
+        onSubmitReview={(id, review) => {
+          onSubmitReview(id, review);
+          setCurrentView("home");
+          setReviewBookingTarget(null);
+        }}
+        onBack={() => {
+          setCurrentView("home");
+          setReviewBookingTarget(null);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* If a completed wash was paid and needs review, show unmissable top banner */}
+      {bookings.some((b) => b.status === "PAID") && (
+        <div className="p-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl shadow-md flex items-center justify-between gap-3 animate-pulse">
+          <div className="flex items-center gap-3">
+            <Star className="w-6 h-6 fill-white text-white shrink-0" />
+            <div>
+              <p className="font-extrabold text-sm">
+                Your Wash is Complete & Paid!
+              </p>
+              <p className="text-xs text-amber-100">
+                Please leave a review and rate your washer to close this job.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const paidBooking = bookings.find((b) => b.status === "PAID");
+              if (paidBooking) {
+                setReviewBookingTarget(paidBooking);
+                setCurrentView("review");
+              }
+            }}
+            className="px-4 py-2 bg-white text-orange-700 font-extrabold rounded-xl text-xs hover:bg-orange-50 transition-colors shadow-sm whitespace-nowrap"
+          >
+            Review Now →
+          </button>
+        </div>
+      )}
+
       {/* Hero Action Banner: "Book a Car Wash" */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 text-white p-6 sm:p-8 shadow-xl">
         <div className="relative z-10 max-w-lg space-y-3">
@@ -123,7 +176,6 @@ export function CustomerView({
           </div>
         </div>
 
-        {/* Decorative background circle */}
         <div className="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-cyan-400/20 blur-3xl pointer-events-none" />
       </div>
 
@@ -241,8 +293,11 @@ export function CustomerView({
               </div>
               <button
                 type="button"
-                onClick={() => setActiveReviewBooking(activeBooking)}
-                className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5"
+                onClick={() => {
+                  setReviewBookingTarget(activeBooking);
+                  setCurrentView("review");
+                }}
+                className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-sm"
               >
                 <span>Write Review</span>
                 <Star className="w-3.5 h-3.5" />
@@ -373,16 +428,7 @@ export function CustomerView({
           isOpen={!!activePaymentBooking}
           onClose={() => setActivePaymentBooking(null)}
           booking={activePaymentBooking}
-          onPaymentSuccess={onPaymentSuccess}
-        />
-      )}
-
-      {activeReviewBooking && (
-        <ReviewModal
-          isOpen={!!activeReviewBooking}
-          onClose={() => setActiveReviewBooking(null)}
-          booking={activeReviewBooking}
-          onSubmitReview={onSubmitReview}
+          onPaymentSuccess={handlePaymentCompleted}
         />
       )}
 

@@ -1,15 +1,17 @@
 "use client";
 
 import React from "react";
-import { Sparkles, UserCheck, ShieldCheck, Car } from "lucide-react";
+import { Sparkles, ShieldCheck, Car, LogOut, LogIn } from "lucide-react";
 import { UserRole } from "@/lib/types";
 
 interface HeaderProps {
   role: UserRole;
   onRoleChange: (role: UserRole) => void;
-  userName: string;
-  userPhone: string;
+  userName?: string;
+  userPhone?: string;
+  isLoggedIn: boolean;
   onOpenAuth: () => void;
+  onLogout: () => void;
 }
 
 export function Header({
@@ -17,7 +19,9 @@ export function Header({
   onRoleChange,
   userName,
   userPhone,
+  isLoggedIn,
   onOpenAuth,
+  onLogout,
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
@@ -69,20 +73,37 @@ export function Header({
         </div>
 
         {/* Profile / Auth */}
-        <button
-          onClick={onOpenAuth}
-          className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors text-left"
-        >
-          <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 text-xs font-bold">
-            {userName ? userName.charAt(0).toUpperCase() : "U"}
+        {isLoggedIn ? (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-left">
+              <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+                {userName ? userName.charAt(0).toUpperCase() : "U"}
+              </div>
+              <div className="hidden md:block">
+                <p className="text-xs font-semibold text-slate-800 leading-tight">
+                  {userName}
+                </p>
+                <p className="text-[10px] text-slate-400">{userPhone}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={onLogout}
+              title="Sign Out"
+              className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
-          <div className="hidden md:block">
-            <p className="text-xs font-semibold text-slate-800 leading-tight">
-              {userName || "Sign In"}
-            </p>
-            <p className="text-[10px] text-slate-400">{userPhone || "OTP / Google"}</p>
-          </div>
-        </button>
+        ) : (
+          <button
+            onClick={onOpenAuth}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-sm"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In</span>
+          </button>
+        )}
       </div>
     </header>
   );

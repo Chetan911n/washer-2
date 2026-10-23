@@ -90,4 +90,5 @@ export interface User {
   role: UserRole;
   garage: Car[];
   addresses: Address[];
+  isLoggedIn?: boolean;
 }
