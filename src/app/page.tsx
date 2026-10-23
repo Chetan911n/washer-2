@@ -27,6 +27,8 @@ export default function Home() {
     removeCarFromGarage,
     removeAllCarsFromGarage,
     addAddressToUser,
+    removeAddressFromUser,
+    removeAllAddressesFromUser,
     createBooking,
     assignBookingToWorker,
     addBeforePhotos,
@@ -231,6 +233,8 @@ export default function Home() {
             onRemoveCar={removeCarFromGarage}
             onRemoveAllCars={removeAllCarsFromGarage}
             onAddAddress={addAddressToUser}
+            onRemoveAddress={removeAddressFromUser}
+            onRemoveAllAddresses={removeAllAddressesFromUser}
             onCreateBooking={createBooking}
             onPaymentSuccess={(id, ref) => markPaymentPaid(id, "UPI", ref)}
             onSubmitReview={submitReview}

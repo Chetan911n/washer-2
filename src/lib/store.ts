@@ -70,9 +70,10 @@ export class WasherStore {
     }
     try {
       const users: User[] = JSON.parse(stored);
-      if (!localStorage.getItem("app_washer_users_cars_reset")) {
+      if (!localStorage.getItem("app_washer_users_cars_reset") || !localStorage.getItem("app_washer_users_addresses_reset")) {
         localStorage.setItem("app_washer_users_cars_reset", "true");
-        const cleaned = users.map((u) => ({ ...u, garage: [] }));
+        localStorage.setItem("app_washer_users_addresses_reset", "true");
+        const cleaned = users.map((u) => ({ ...u, garage: [], addresses: [] }));
         localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(cleaned));
         return cleaned;
       }
@@ -154,13 +155,15 @@ export class WasherStore {
 
   static getUser(): User | null {
     if (typeof window === "undefined") return null;
-    if (!localStorage.getItem("app_washer_cars_reset_done")) {
+    if (!localStorage.getItem("app_washer_cars_reset_done") || !localStorage.getItem("app_washer_addresses_reset_done")) {
       localStorage.setItem("app_washer_cars_reset_done", "true");
+      localStorage.setItem("app_washer_addresses_reset_done", "true");
       const stored = localStorage.getItem(STORAGE_KEYS.USER);
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
           parsed.garage = [];
+          parsed.addresses = [];
           localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(parsed));
           return parsed.isLoggedIn ? parsed : null;
         } catch {}
@@ -303,7 +306,39 @@ export class WasherStore {
     };
     user.addresses = [...(user.addresses || []), newAddr];
     this.setUser(user);
+    const users = this.getRegisteredUsers().map((u) =>
+      u.id === user.id ? { ...u, addresses: user.addresses } : u
+    );
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    }
     return newAddr;
+  }
+
+  static removeAddressFromUser(addressId: string) {
+    const user = this.getUser();
+    if (!user) return;
+    user.addresses = (user.addresses || []).filter((a) => a.id !== addressId);
+    this.setUser(user);
+    const users = this.getRegisteredUsers().map((u) =>
+      u.id === user.id ? { ...u, addresses: user.addresses } : u
+    );
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    }
+  }
+
+  static removeAllAddressesFromUser() {
+    const user = this.getUser();
+    if (!user) return;
+    user.addresses = [];
+    this.setUser(user);
+    const users = this.getRegisteredUsers().map((u) =>
+      u.id === user.id ? { ...u, addresses: [] } : u
+    );
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    }
   }
 
   static createBooking(data: {
@@ -564,6 +599,8 @@ export function useAppWasherStore() {
     removeCarFromGarage: (id: string) => WasherStore.removeCarFromGarage(id),
     removeAllCarsFromGarage: () => WasherStore.removeAllCarsFromGarage(),
     addAddressToUser: (a: Omit<Address, "id">) => WasherStore.addAddressToUser(a),
+    removeAddressFromUser: (id: string) => WasherStore.removeAddressFromUser(id),
+    removeAllAddressesFromUser: () => WasherStore.removeAllAddressesFromUser(),
     createBooking: (d: Parameters<typeof WasherStore.createBooking>[0]) =>
       WasherStore.createBooking(d),
     assignBookingToWorker: (bookingId: string, worker: StationWorker) =>

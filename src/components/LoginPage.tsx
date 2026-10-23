@@ -6,7 +6,6 @@ import {
   DEFAULT_CUSTOMER,
   DEFAULT_WASHER,
   DEFAULT_STATION_HEAD,
-  INITIAL_ADDRESSES,
 } from "@/lib/defaultData";
 import { WasherStore } from "@/lib/store";
 import {
@@ -197,7 +196,7 @@ export function LoginPage({
         email: `cust_${cleanPhone}@appwasher.com`,
         role: "customer",
         garage: [],
-        addresses: INITIAL_ADDRESSES,
+        addresses: [],
         isLoggedIn: true,
       };
       WasherStore.registerUser(newUser);
@@ -218,7 +217,7 @@ export function LoginPage({
       email: "chetan.sharma@gmail.com",
       role: "customer",
       garage: [],
-      addresses: INITIAL_ADDRESSES,
+      addresses: [],
       isLoggedIn: true,
     };
     WasherStore.registerUser(googleUser);

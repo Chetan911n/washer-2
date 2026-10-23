@@ -10,24 +10,7 @@ export const CAR_PRICING: Record<string, number> = {
 
 export const INITIAL_CARS: Car[] = [];
 
-export const INITIAL_ADDRESSES: Address[] = [
-  {
-    id: "addr-1",
-    label: "Home",
-    street: "Prestige Ferns Residency, Tower 4",
-    apartmentName: "Flat 802",
-    parkingSpot: "Basement 2, Pillar #45 (Covered Bay)",
-    city: "Bangalore",
-  },
-  {
-    id: "addr-2",
-    label: "Office",
-    street: "EcoWorld Business Park, Block 3",
-    apartmentName: "Ground Floor Visitor Parking",
-    parkingSpot: "Slot V-18",
-    city: "Bangalore",
-  },
-];
+export const INITIAL_ADDRESSES: Address[] = [];
 
 export const DEFAULT_CUSTOMER: User = {
   id: "cust-01",
@@ -38,7 +21,7 @@ export const DEFAULT_CUSTOMER: User = {
   email: "chetan@example.com",
   role: "customer",
   garage: [],
-  addresses: INITIAL_ADDRESSES,
+  addresses: [],
 };
 
 export const STATION_CREW: StationWorker[] = [

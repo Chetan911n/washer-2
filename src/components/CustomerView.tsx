@@ -29,6 +29,8 @@ interface CustomerViewProps {
   onRemoveCar?: (carId: string) => void;
   onRemoveAllCars?: () => void;
   onAddAddress?: (address: Omit<Address, "id">) => Address;
+  onRemoveAddress?: (addressId: string) => void;
+  onRemoveAllAddresses?: () => void;
   onCreateBooking: (data: {
     cars: Car[];
     address: Address;
@@ -55,6 +57,8 @@ export function CustomerView({
   onRemoveCar,
   onRemoveAllCars,
   onAddAddress,
+  onRemoveAddress,
+  onRemoveAllAddresses,
   onCreateBooking,
   onPaymentSuccess,
   onSubmitReview,
@@ -62,12 +66,33 @@ export function CustomerView({
   const [currentView, setCurrentView] = useState<"home" | "review">("home");
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
+  const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
+  const [addrLabel, setAddrLabel] = useState("Home");
+  const [addrStreet, setAddrStreet] = useState("");
+  const [addrSpot, setAddrSpot] = useState("");
+  const [addrCity, setAddrCity] = useState("Bangalore");
   const [activePaymentBooking, setActivePaymentBooking] =
     useState<Booking | null>(null);
   const [reviewBookingTarget, setReviewBookingTarget] =
     useState<Booking | null>(null);
   const [viewingPhotosBooking, setViewingPhotosBooking] =
     useState<Booking | null>(null);
+
+  const handleSaveAddress = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addrStreet.trim() || !addrSpot.trim()) return;
+    if (onAddAddress) {
+      onAddAddress({
+        label: addrLabel,
+        street: addrStreet.trim(),
+        parkingSpot: addrSpot.trim(),
+        city: addrCity.trim(),
+      });
+    }
+    setIsAddAddressOpen(false);
+    setAddrStreet("");
+    setAddrSpot("");
+  };
 
   // Active in-flight booking
   const activeBooking = bookings.find(
@@ -441,30 +466,161 @@ export function CustomerView({
 
       {/* Saved Addresses Section */}
       <div className="space-y-3">
-        <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-blue-600" />
-          <span>Saved Wash Locations</span>
-        </h3>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-blue-600" />
+              <span>Saved Wash Locations ({user.addresses?.length || 0})</span>
+            </h3>
+            <p className="text-[11px] text-slate-500">
+              {user.addresses && user.addresses.length > 0
+                ? "Manage your doorstep service locations & parking bay details"
+                : "No locations saved yet. Add your address & parking spot below."}
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {user.addresses.map((addr) => (
-            <div
-              key={addr.id}
-              className="p-3 bg-white border border-slate-200 rounded-2xl text-xs space-y-1 shadow-sm"
+          <div className="flex items-center gap-2">
+            {user.addresses && user.addresses.length > 0 && onRemoveAllAddresses && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("Are you sure you want to remove all saved locations?")) {
+                    onRemoveAllAddresses();
+                  }
+                }}
+                className="text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Remove All</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setIsAddAddressOpen(!isAddAddressOpen)}
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors"
             >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-800">{addr.label}</span>
-                <span className="text-[10px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded">
-                  {addr.city}
-                </span>
+              <Plus className="w-3.5 h-3.5" />
+              <span>{isAddAddressOpen ? "Cancel" : "Add Location"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Inline Add Address Form */}
+        {isAddAddressOpen && (
+          <form onSubmit={handleSaveAddress} className="p-4 bg-white border border-blue-200 rounded-2xl space-y-3 shadow-sm">
+            <h4 className="text-xs font-bold text-slate-800">Add New Doorstep Location</h4>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 mb-1">Location Label</label>
+                <input
+                  type="text"
+                  required
+                  value={addrLabel}
+                  onChange={(e) => setAddrLabel(e.target.value)}
+                  placeholder="e.g. Home, Office"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                />
               </div>
-              <p className="text-slate-600">{addr.street}</p>
-              <p className="text-blue-700 font-bold bg-blue-50 inline-block px-1.5 py-0.5 rounded text-[11px]">
-                Spot: {addr.parkingSpot}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 mb-1">City</label>
+                <input
+                  type="text"
+                  required
+                  value={addrCity}
+                  onChange={(e) => setAddrCity(e.target.value)}
+                  placeholder="Bangalore"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-600 mb-1">Street / Apartment Address</label>
+              <input
+                type="text"
+                required
+                value={addrStreet}
+                onChange={(e) => setAddrStreet(e.target.value)}
+                placeholder="e.g. Prestige Ferns Residency, Tower 4, Flat 802"
+                className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-blue-900 mb-1">Exact Parking Spot / Bay Number</label>
+              <input
+                type="text"
+                required
+                value={addrSpot}
+                onChange={(e) => setAddrSpot(e.target.value)}
+                placeholder="e.g. Basement 2, Pillar #45 (Covered Bay)"
+                className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-blue-400 bg-blue-50/50 font-medium text-blue-900"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1 shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Save Location</span>
+            </button>
+          </form>
+        )}
+
+        {(!user.addresses || user.addresses.length === 0) && !isAddAddressOpen ? (
+          <div className="p-8 border-2 border-dashed border-slate-200 rounded-3xl text-center bg-white space-y-3 shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center text-xl">
+              📍
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-slate-800">No Saved Locations</h4>
+              <p className="text-xs text-slate-500 mt-0.5 max-w-sm mx-auto">
+                All previous locations have been removed. Add your building address and exact parking bay to receive doorstep washes.
               </p>
             </div>
-          ))}
-        </div>
+            <button
+              type="button"
+              onClick={() => setIsAddAddressOpen(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Your First Location</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {user.addresses?.map((addr) => (
+              <div
+                key={addr.id}
+                className="p-3.5 bg-white border border-slate-200 rounded-2xl text-xs space-y-2 shadow-sm hover:shadow-md transition-shadow relative group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-800 text-sm">{addr.label}</span>
+                    <span className="text-[10px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full">
+                      {addr.city}
+                    </span>
+                  </div>
+                  {onRemoveAddress && (
+                    <button
+                      type="button"
+                      onClick={() => onRemoveAddress(addr.id)}
+                      title="Remove Location"
+                      className="p-1.5 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                <p className="text-slate-600 leading-snug">{addr.street}</p>
+                <div className="pt-1">
+                  <p className="text-blue-800 font-bold bg-blue-50 border border-blue-200/60 inline-block px-2 py-1 rounded-lg text-[11px]">
+                    Parking Spot: {addr.parkingSpot}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Modals */}
