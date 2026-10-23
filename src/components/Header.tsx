@@ -10,6 +10,7 @@ interface HeaderProps {
   userName?: string;
   userPhone?: string;
   isLoggedIn: boolean;
+  userRole?: UserRole;
   onOpenAuth: () => void;
   onLogout: () => void;
 }
@@ -20,6 +21,7 @@ export function Header({
   userName,
   userPhone,
   isLoggedIn,
+  userRole,
   onOpenAuth,
   onLogout,
 }: HeaderProps) {
@@ -46,44 +48,67 @@ export function Header({
           </div>
         </div>
 
-        {/* 3-Role Switcher: Customer | Station Head | Washer */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
-          <button
-            onClick={() => onRoleChange("customer")}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
-              role === "customer"
-                ? "bg-white text-blue-700 shadow-sm font-bold"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Car className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Customer</span>
-          </button>
+        {/* Role View: Locked Badge when logged in, or Portal Switcher when logged out */}
+        {isLoggedIn ? (
+          <div className="flex items-center">
+            {role === "customer" && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold shadow-sm">
+                <Car className="w-3.5 h-3.5 text-blue-600" />
+                <span>Customer Portal</span>
+              </div>
+            )}
+            {role === "station_head" && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold shadow-sm">
+                <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Station Head Hub</span>
+              </div>
+            )}
+            {role === "washer" && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold shadow-sm">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                <span>Field Washer Portal</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+            <button
+              onClick={() => onRoleChange("customer")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
+                role === "customer"
+                  ? "bg-white text-blue-700 shadow-sm font-bold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Car className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Customer</span>
+            </button>
 
-          <button
-            onClick={() => onRoleChange("station_head")}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
-              role === "station_head"
-                ? "bg-indigo-600 text-white shadow-sm font-bold"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            <span>Station Head</span>
-          </button>
+            <button
+              onClick={() => onRoleChange("station_head")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
+                role === "station_head"
+                  ? "bg-indigo-600 text-white shadow-sm font-bold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Station Head</span>
+            </button>
 
-          <button
-            onClick={() => onRoleChange("washer")}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
-              role === "washer"
-                ? "bg-blue-600 text-white shadow-sm font-bold"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Field Washer</span>
-          </button>
-        </div>
+            <button
+              onClick={() => onRoleChange("washer")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
+                role === "washer"
+                  ? "bg-blue-600 text-white shadow-sm font-bold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Field Washer</span>
+            </button>
+          </div>
+        )}
 
         {/* Profile / Auth */}
         {isLoggedIn ? (

@@ -40,27 +40,20 @@ export default function Home() {
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
-  // Switch role with synced persona
-  const handleRoleSwitch = (newRole: "customer" | "station_head" | "washer") => {
-    setRole(newRole);
-    if (newRole === "station_head" && user?.role !== "station_head") {
-      setUser({ ...DEFAULT_STATION_HEAD, isLoggedIn: true });
-    } else if (newRole === "washer" && user?.role !== "washer") {
-      setUser({
-        id: DEFAULT_WASHER.id,
-        name: DEFAULT_WASHER.name,
-        username: DEFAULT_WASHER.username,
-        password: DEFAULT_WASHER.password,
-        phone: DEFAULT_WASHER.phone,
-        email: "rajesh.washer@appwasher.com",
-        role: "washer",
-        garage: [],
-        addresses: [],
-        isLoggedIn: true,
-      });
-    } else if (newRole === "customer" && user?.role !== "customer") {
-      setUser({ ...DEFAULT_CUSTOMER, isLoggedIn: true });
+  // Ensure role is strictly locked to authenticated user's role
+  React.useEffect(() => {
+    if (user && role !== user.role) {
+      setRole(user.role);
     }
+  }, [user, role, setRole]);
+
+  // Role switch is strictly restricted: authenticated users are locked to their assigned role!
+  const handleRoleSwitch = (newRole: "customer" | "station_head" | "washer") => {
+    if (user) {
+      // User is authenticated. Their role is locked to prevent cross-portal access!
+      return;
+    }
+    setRole(newRole);
   };
 
   // If initial local storage sync is loading
@@ -129,6 +122,7 @@ export default function Home() {
         userName={user?.name || "Partner"}
         userPhone={user?.phone || "+91 91234 56789"}
         isLoggedIn={!!user}
+        userRole={user?.role}
         onOpenAuth={() => setAuthModalOpen(true)}
         onLogout={logout}
       />
@@ -181,43 +175,48 @@ export default function Home() {
         </div>
       )}
 
-      {/* Interactive Quick Tour / Testing Banner */}
-      <div className="bg-blue-50/90 border-b border-blue-200/80 px-4 py-2.5 text-xs text-blue-900">
+      {/* Role-Specific Portal Info Banner */}
+      <div
+        className={`border-b px-4 py-2.5 text-xs ${
+          role === "customer"
+            ? "bg-blue-50/90 border-blue-200/80 text-blue-900"
+            : role === "station_head"
+            ? "bg-indigo-50/90 border-indigo-200/80 text-indigo-900"
+            : "bg-slate-100 border-slate-200 text-slate-800"
+        }`}
+      >
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Info className="w-4 h-4 text-blue-600 shrink-0" />
-            <span>
-              <strong>Station Partnership Flow:</strong> 1.{" "}
-              <button
-                onClick={() => handleRoleSwitch("customer")}
-                className="font-bold underline text-blue-700"
-              >
-                Customer books
-              </button>{" "}
-              → 2.{" "}
-              <button
-                onClick={() => handleRoleSwitch("station_head")}
-                className="font-bold underline text-indigo-700"
-              >
-                Station Head assigns staff
-              </button>{" "}
-              → 3.{" "}
-              <button
-                onClick={() => handleRoleSwitch("washer")}
-                className="font-bold underline text-blue-700"
-              >
-                Worker washes & collects cash
-              </button>{" "}
-              → 4. Station settles platform fee online!
-            </span>
+            {role === "customer" ? (
+              <>
+                <Car className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>
+                  <strong>Customer Portal:</strong> Book doorstep washes, manage vehicles & parking spots, and verify before/after insurance photos.
+                </span>
+              </>
+            ) : role === "station_head" ? (
+              <>
+                <Building2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>
+                  <strong>Station Head Dispatch:</strong> Area customer bookings are routed here. Assign crew technicians and settle 20% platform share.
+                </span>
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>
+                  <strong>Technician Field Portal:</strong> Capture mandatory Before-Photos, wash car, upload After-Photos, and collect Cash/UPI.
+                </span>
+              </>
+            )}
           </div>
 
-          <div className="flex items-center gap-1.5 self-end sm:self-auto">
-            <span className="text-[11px] text-blue-800 bg-white px-2 py-0.5 rounded-full border border-blue-200 font-semibold flex items-center gap-1">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <span className="text-[11px] bg-white px-2.5 py-0.5 rounded-full border border-slate-200 font-semibold flex items-center gap-1 shadow-2xs">
               {role === "customer" && <Car className="w-3 h-3 text-blue-600" />}
               {role === "station_head" && <Building2 className="w-3 h-3 text-indigo-600" />}
-              {role === "washer" && <ShieldCheck className="w-3 h-3 text-green-600" />}
-              <span className="capitalize">{role.replace("_", " ")} Mode</span>
+              {role === "washer" && <ShieldCheck className="w-3 h-3 text-emerald-600" />}
+              <span className="capitalize">{role.replace("_", " ")} Session ({user?.name || "User"})</span>
             </span>
           </div>
         </div>
