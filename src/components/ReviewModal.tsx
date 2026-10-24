@@ -78,7 +78,7 @@ export function ReviewModal({
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Washer Avatar & Profile */}
         <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-blue-100 mx-auto mb-2 overflow-hidden border-2 border-blue-500 shadow-sm flex items-center justify-center">
+          <div className="w-16 h-16 rounded-2xl bg-[#E8F7EF] mx-auto mb-2 overflow-hidden border-2 border-[#07865B] shadow-2xs flex items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={
@@ -89,17 +89,17 @@ export function ReviewModal({
               className="w-full h-full object-cover"
             />
           </div>
-          <h3 className="font-extrabold text-base text-slate-900">
+          <h3 className="font-extrabold text-base text-[#171A19]">
             {booking.washer?.name || "Rajesh Kumar"}
           </h3>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-[#707875]">
             Washed {booking.cars.map((c) => c.name).join(" & ")}
           </p>
         </div>
 
         {/* Star Rating */}
         <div className="py-2 text-center">
-          <label className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wider">
+          <label className="block text-xs font-bold text-[#707875] mb-2 uppercase tracking-wider">
             Rate Your Doorstep Experience
           </label>
           <div className="flex items-center justify-center gap-2">
@@ -116,7 +116,7 @@ export function ReviewModal({
                   className={`w-8 h-8 ${
                     (hoverRating !== null ? hoverRating >= star : rating >= star)
                       ? "text-amber-400 fill-amber-400"
-                      : "text-slate-300"
+                      : "text-slate-200"
                   }`}
                 />
               </button>
@@ -133,8 +133,8 @@ export function ReviewModal({
 
         {/* Compliment Tags */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
-            <ThumbsUp className="w-3.5 h-3.5 text-blue-600" />
+          <label className="block text-xs font-bold text-[#171A19] mb-1.5 flex items-center gap-1">
+            <ThumbsUp className="w-3.5 h-3.5 text-[#07865B]" />
             What did you like the most?
           </label>
           <div className="flex flex-wrap gap-1.5">
@@ -145,10 +145,10 @@ export function ReviewModal({
                   key={tag}
                   type="button"
                   onClick={() => toggleTag(tag)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
                     selected
-                      ? "bg-blue-50 border-blue-600 text-blue-700 ring-1 ring-blue-600"
-                      : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                      ? "bg-[#E8F7EF] border-[#07865B] text-[#066747] ring-1 ring-[#07865B]"
+                      : "bg-white border-[#E7EBE8] text-[#707875] hover:border-slate-300"
                   }`}
                 >
                   {tag}
@@ -160,7 +160,7 @@ export function ReviewModal({
 
         {/* Feedback Text */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
+          <label className="block text-xs font-bold text-[#171A19] mb-1">
             Write a Quick Review
           </label>
           <textarea
@@ -168,13 +168,13 @@ export function ReviewModal({
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Super clean finish! Arrived right on time and parked cars safely."
-            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 text-xs rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B] outline-none"
           />
         </div>
 
         {/* Optional Tip */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+          <label className="block text-xs font-bold text-[#171A19] mb-1.5">
             Tip for {booking.washer?.name || "Washer"} (Optional)
           </label>
           <div className="flex items-center gap-2">
@@ -183,10 +183,10 @@ export function ReviewModal({
                 key={amount}
                 type="button"
                 onClick={() => setTip(amount)}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                   tip === amount
-                    ? "bg-green-50 border-green-600 text-green-700 ring-1 ring-green-600"
-                    : "bg-white border-slate-200 text-slate-600"
+                    ? "bg-[#E8F7EF] border-[#07865B] text-[#066747] ring-1 ring-[#07865B]"
+                    : "bg-white border-[#E7EBE8] text-[#707875]"
                 }`}
               >
                 {amount === 0 ? "No Tip" : `₹${amount}`}
@@ -198,7 +198,7 @@ export function ReviewModal({
         {/* Submit */}
         <button
           type="submit"
-          className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-md shadow-blue-500/20"
+          className="w-full py-3 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-sm shadow-[#07865B]/20"
         >
           <Send className="w-4 h-4" />
           <span>Submit Review & Finish</span>

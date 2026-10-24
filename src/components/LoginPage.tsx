@@ -25,6 +25,7 @@ import {
   AlertCircle,
   Check,
   Zap,
+  Droplets,
 } from "lucide-react";
 
 interface LoginPageProps {
@@ -167,7 +168,7 @@ export function LoginPage({
     }
     setErrorMsg(null);
     setOtpSent(true);
-    setOtp("123456"); // Pre-filled for demo ease
+    setOtp("123456");
     setSuccessMsg("OTP sent: 123456 (auto-filled for testing)");
   };
 
@@ -187,7 +188,6 @@ export function LoginPage({
       setSuccessMsg(`Phone verified! Welcome back, ${registered.name}!`);
       onLogin({ ...registered, isLoggedIn: true }, "customer");
     } else {
-      // New phone user -> log in with default garage & entered phone
       const newUser: User = {
         id: "cust-" + Date.now(),
         name: "Customer (" + cleanPhone.slice(-4) + ")",
@@ -338,19 +338,19 @@ export function LoginPage({
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-6 px-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+    <div className="min-h-[85vh] flex items-center justify-center py-8 px-4 bg-[#F7F8F7]">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-card border border-[#E7EBE8] overflow-hidden">
         {/* Top Role Selector Tabs */}
-        <div className="bg-slate-900 text-white p-3 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-bold">
-          <span className="text-slate-400">Select Portal:</span>
-          <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700 w-full sm:w-auto">
+        <div className="bg-[#171A19] text-white p-3 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-bold">
+          <span className="text-[#707875]">Portal Selection:</span>
+          <div className="flex bg-[#232725] p-1 rounded-xl border border-white/10 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => handleRoleChange("customer")}
               className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
                 authRole === "customer"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#07865B] text-white shadow-xs"
+                  : "text-[#707875] hover:text-white"
               }`}
             >
               <CarIcon className="w-3.5 h-3.5" />
@@ -362,8 +362,8 @@ export function LoginPage({
               onClick={() => handleRoleChange("station_head")}
               className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
                 authRole === "station_head"
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#07865B] text-white shadow-xs"
+                  : "text-[#707875] hover:text-white"
               }`}
             >
               <Building2 className="w-3.5 h-3.5" />
@@ -375,8 +375,8 @@ export function LoginPage({
               onClick={() => handleRoleChange("washer")}
               className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
                 authRole === "washer"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#07865B] text-white shadow-xs"
+                  : "text-[#707875] hover:text-white"
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -385,26 +385,18 @@ export function LoginPage({
           </div>
         </div>
 
-        {/* Dynamic Header Banner */}
-        <div
-          className={`p-6 text-center text-white transition-colors duration-300 ${
-            authRole === "customer"
-              ? "bg-gradient-to-br from-blue-600 to-indigo-800"
-              : authRole === "station_head"
-              ? "bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900"
-              : "bg-gradient-to-br from-slate-900 to-blue-950"
-          }`}
-        >
-          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md mx-auto mb-2 flex items-center justify-center text-white shadow-inner">
+        {/* Dynamic Emerald Header Banner */}
+        <div className="p-6 text-center text-white bg-gradient-to-br from-[#07865B] via-[#066747] to-[#04412E]">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md mx-auto mb-2.5 flex items-center justify-center text-white shadow-inner">
             {authRole === "customer" ? (
-              <Sparkles className="w-6 h-6" />
+              <Droplets className="w-6 h-6 fill-white/20" />
             ) : authRole === "station_head" ? (
               <Building2 className="w-6 h-6" />
             ) : (
               <ShieldCheck className="w-6 h-6" />
             )}
           </div>
-          <h1 className="text-xl font-extrabold tracking-tight">
+          <h1 className="text-xl font-black tracking-tight">
             {authRole === "customer"
               ? customerMode === "signin"
                 ? "Customer Sign In"
@@ -413,7 +405,7 @@ export function LoginPage({
               ? "Station Head / Hub Manager"
               : "Field Washer Technician Portal"}
           </h1>
-          <p className="text-xs text-blue-100 mt-1 max-w-xs mx-auto">
+          <p className="text-xs text-[#E8F7EF] mt-1 max-w-xs mx-auto">
             {authRole === "customer"
               ? "Doorstep car wash with photo inspection liability protection & UPI"
               : authRole === "station_head"
@@ -433,8 +425,8 @@ export function LoginPage({
           )}
 
           {successMsg && (
-            <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-semibold flex items-center gap-2">
-              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div className="mb-4 p-3 bg-[#E8F7EF] border border-[#07865B]/30 rounded-xl text-xs text-[#066747] font-semibold flex items-center gap-2">
+              <Check className="w-4 h-4 text-[#07865B] shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
@@ -443,7 +435,7 @@ export function LoginPage({
           {authRole === "customer" && (
             <div className="space-y-4">
               {/* Sign In vs Register Toggle */}
-              <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold border border-slate-200">
+              <div className="flex bg-[#F7F8F7] p-1 rounded-xl text-xs font-bold border border-[#E7EBE8]">
                 <button
                   type="button"
                   onClick={() => {
@@ -452,8 +444,8 @@ export function LoginPage({
                   }}
                   className={`flex-1 py-1.5 rounded-lg transition-all ${
                     customerMode === "signin"
-                      ? "bg-white text-blue-700 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "bg-white text-[#07865B] shadow-xs"
+                      : "text-[#707875] hover:text-[#171A19]"
                   }`}
                 >
                   Sign In
@@ -466,8 +458,8 @@ export function LoginPage({
                   }}
                   className={`flex-1 py-1.5 rounded-lg transition-all ${
                     customerMode === "register"
-                      ? "bg-white text-blue-700 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "bg-white text-[#07865B] shadow-xs"
+                      : "text-[#707875] hover:text-[#171A19]"
                   }`}
                 >
                   Register / Add Car
@@ -478,14 +470,14 @@ export function LoginPage({
                 /* Customer Sign In Options */
                 <div className="space-y-4">
                   {/* Sub-method Switcher */}
-                  <div className="grid grid-cols-3 gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200 text-[11px] font-semibold">
+                  <div className="grid grid-cols-3 gap-1 bg-[#F7F8F7] p-1 rounded-xl border border-[#E7EBE8] text-[11px] font-semibold">
                     <button
                       type="button"
                       onClick={() => setCustomerMethod("username")}
                       className={`py-1.5 rounded-lg flex items-center justify-center gap-1 transition-all ${
                         customerMethod === "username"
-                          ? "bg-white text-blue-700 shadow-sm font-bold"
-                          : "text-slate-600 hover:text-slate-900"
+                          ? "bg-white text-[#07865B] shadow-xs font-bold"
+                          : "text-[#707875] hover:text-[#171A19]"
                       }`}
                     >
                       <UserIcon className="w-3 h-3" />
@@ -496,8 +488,8 @@ export function LoginPage({
                       onClick={() => setCustomerMethod("phone")}
                       className={`py-1.5 rounded-lg flex items-center justify-center gap-1 transition-all ${
                         customerMethod === "phone"
-                          ? "bg-white text-blue-700 shadow-sm font-bold"
-                          : "text-slate-600 hover:text-slate-900"
+                          ? "bg-white text-[#07865B] shadow-xs font-bold"
+                          : "text-[#707875] hover:text-[#171A19]"
                       }`}
                     >
                       <Phone className="w-3 h-3" />
@@ -508,8 +500,8 @@ export function LoginPage({
                       onClick={() => setCustomerMethod("google")}
                       className={`py-1.5 rounded-lg flex items-center justify-center gap-1 transition-all ${
                         customerMethod === "google"
-                          ? "bg-white text-blue-700 shadow-sm font-bold"
-                          : "text-slate-600 hover:text-slate-900"
+                          ? "bg-white text-[#07865B] shadow-xs font-bold"
+                          : "text-[#707875] hover:text-[#171A19]"
                       }`}
                     >
                       <span className="font-bold text-[11px] text-red-500">G</span>
@@ -522,7 +514,7 @@ export function LoginPage({
                     <form onSubmit={handleCustomerUsernameLogin} className="space-y-3">
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-bold text-slate-700">
+                          <label className="text-xs font-bold text-[#171A19]">
                             Username or Email
                           </label>
                           <button
@@ -531,47 +523,47 @@ export function LoginPage({
                               setUsername("chetan");
                               setPassword("password123");
                             }}
-                            className="text-[10px] text-blue-600 bg-blue-50 hover:bg-blue-100 px-1.5 py-0.5 rounded font-mono font-medium"
+                            className="text-[10px] text-[#07865B] bg-[#E8F7EF] hover:bg-[#C7EED8] px-1.5 py-0.5 rounded font-mono font-medium"
                           >
                             fill: chetan
                           </button>
                         </div>
                         <div className="relative">
-                          <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                          <UserIcon className="w-4 h-4 text-[#707875] absolute left-3 top-2.5" />
                           <input
                             type="text"
                             required
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             placeholder="chetan"
-                            className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-[#E7EBE8] bg-white focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B] transition-colors"
                           />
                         </div>
                       </div>
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-bold text-slate-700">
+                          <label className="text-xs font-bold text-[#171A19]">
                             Password
                           </label>
-                          <span className="text-[10px] text-slate-400 font-mono">
+                          <span className="text-[10px] text-[#707875] font-mono">
                             demo: password123
                           </span>
                         </div>
                         <div className="relative">
-                          <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                          <Lock className="w-4 h-4 text-[#707875] absolute left-3 top-2.5" />
                           <input
                             type={showPassword ? "text" : "password"}
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
-                            className="w-full pl-9 pr-10 py-2 text-sm rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            className="w-full pl-9 pr-10 py-2 text-sm rounded-xl border border-[#E7EBE8] bg-white focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B] transition-colors"
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                            className="absolute right-3 top-2.5 text-[#707875] hover:text-[#171A19]"
                           >
                             {showPassword ? (
                               <EyeOff className="w-4 h-4" />
@@ -584,7 +576,7 @@ export function LoginPage({
 
                       <button
                         type="submit"
-                        className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+                        className="w-full py-2.5 px-4 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-sm shadow-[#07865B]/20"
                       >
                         <KeyRound className="w-4 h-4" />
                         <span>Sign In as Customer</span>
@@ -598,11 +590,11 @@ export function LoginPage({
                       {!otpSent ? (
                         <form onSubmit={handleSendOtp} className="space-y-3">
                           <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                            <label className="block text-xs font-semibold text-[#171A19] mb-1">
                               Mobile Number
                             </label>
                             <div className="flex">
-                              <span className="inline-flex items-center px-3 text-sm text-slate-500 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl font-medium">
+                              <span className="inline-flex items-center px-3 text-sm text-[#707875] bg-[#F7F8F7] border border-r-0 border-[#E7EBE8] rounded-l-xl font-medium">
                                 +91
                               </span>
                               <input
@@ -614,13 +606,13 @@ export function LoginPage({
                                   setPhone(e.target.value.replace(/\D/g, ""))
                                 }
                                 placeholder="98765 43210"
-                                className="w-full px-3 py-2 text-sm rounded-r-xl border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium"
+                                className="w-full px-3 py-2 text-sm rounded-r-xl border border-[#E7EBE8] bg-white focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B] font-medium"
                               />
                             </div>
                           </div>
                           <button
                             type="submit"
-                            className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+                            className="w-full py-2.5 px-4 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-sm shadow-[#07865B]/20"
                           >
                             <span>Send OTP</span>
                             <ArrowRight className="w-4 h-4" />
@@ -628,12 +620,12 @@ export function LoginPage({
                         </form>
                       ) : (
                         <form onSubmit={handleVerifyOtp} className="space-y-3">
-                          <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800">
+                          <div className="p-2.5 bg-[#E8F7EF] border border-[#07865B]/30 rounded-xl text-xs text-[#066747]">
                             OTP sent to <strong>+91 {phone}</strong>. Auto-filled:{" "}
                             <strong>123456</strong>
                           </div>
                           <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                            <label className="block text-xs font-semibold text-[#171A19] mb-1">
                               Enter 6-Digit OTP
                             </label>
                             <input
@@ -642,12 +634,12 @@ export function LoginPage({
                               maxLength={6}
                               value={otp}
                               onChange={(e) => setOtp(e.target.value)}
-                              className="w-full px-3 py-2 text-center text-lg font-bold tracking-widest rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              className="w-full px-3 py-2 text-center text-lg font-bold tracking-widest rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                             />
                           </div>
                           <button
                             type="submit"
-                            className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors shadow-sm flex items-center justify-center gap-1.5"
+                            className="w-full py-2.5 px-4 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-sm transition-all shadow-sm shadow-[#07865B]/20 flex items-center justify-center gap-1.5"
                           >
                             <CheckCircle2 className="w-4 h-4" />
                             <span>Verify & Enter Dashboard</span>
@@ -660,13 +652,13 @@ export function LoginPage({
                   {/* Method 3: Google Connected */}
                   {customerMethod === "google" && (
                     <div className="space-y-3 text-center py-2">
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-[#707875]">
                         Sign in instantly with your verified Google account
                       </p>
                       <button
                         type="button"
                         onClick={handleGoogleLogin}
-                        className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-800 font-bold rounded-xl text-sm border border-slate-300 transition-colors flex items-center justify-center gap-2.5 shadow-sm"
+                        className="w-full py-2.5 px-4 bg-white hover:bg-[#F7F8F7] text-[#171A19] font-bold rounded-xl text-sm border border-[#E7EBE8] transition-colors flex items-center justify-center gap-2.5 shadow-xs"
                       >
                         <svg className="w-4 h-4" viewBox="0 0 24 24">
                           <path
@@ -696,9 +688,9 @@ export function LoginPage({
                     <button
                       type="button"
                       onClick={() => onDemoLogin("customer")}
-                      className="w-full py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 border border-blue-200"
+                      className="w-full py-2 px-3 bg-[#E8F7EF] hover:bg-[#C7EED8] text-[#07865B] font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 border border-[#07865B]/25"
                     >
-                      <Zap className="w-3.5 h-3.5 text-blue-600" />
+                      <Zap className="w-3.5 h-3.5 text-[#07865B]" />
                       <span>1-Tap Customer Demo Sign In (Chetan)</span>
                     </button>
                   </div>
@@ -706,13 +698,13 @@ export function LoginPage({
               ) : (
                 /* Customer Register Form (with Car & Address) */
                 <form onSubmit={handleCustomerRegister} className="space-y-3.5 text-left">
-                  <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900">
+                  <div className="p-2.5 bg-[#E8F7EF] border border-[#07865B]/25 rounded-xl text-xs text-[#066747]">
                     Register once to save your vehicle & doorstep parking spot for seamless washes!
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-bold text-[#171A19] mb-1">
                         Full Name
                       </label>
                       <input
@@ -721,11 +713,11 @@ export function LoginPage({
                         value={regName}
                         onChange={(e) => setRegName(e.target.value)}
                         placeholder="Chetan Sharma"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-bold text-[#171A19] mb-1">
                         Mobile Number
                       </label>
                       <input
@@ -737,14 +729,14 @@ export function LoginPage({
                           setRegPhone(e.target.value.replace(/\D/g, ""))
                         }
                         placeholder="9876543210"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-bold text-[#171A19] mb-1">
                         Username
                       </label>
                       <input
@@ -753,11 +745,11 @@ export function LoginPage({
                         value={regUsername}
                         onChange={(e) => setRegUsername(e.target.value)}
                         placeholder="chetan"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300 font-mono"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#E7EBE8] font-mono focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-bold text-[#171A19] mb-1">
                         Password
                       </label>
                       <input
@@ -766,14 +758,14 @@ export function LoginPage({
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
                         placeholder="password123"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                       />
                     </div>
                   </div>
 
                   {/* Car Type Selector */}
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    <label className="block text-[11px] font-bold text-[#171A19] mb-1">
                       Select Car Type
                     </label>
                     <div className="grid grid-cols-3 gap-1.5">
@@ -784,8 +776,8 @@ export function LoginPage({
                           onClick={() => setCarType(item.type)}
                           className={`p-1.5 rounded-lg border text-left transition-all ${
                             carType === item.type
-                              ? "border-blue-600 bg-blue-50 text-blue-900 font-bold ring-1 ring-blue-600"
-                              : "border-slate-200 bg-white text-slate-700 text-xs"
+                              ? "border-[#07865B] bg-[#E8F7EF] text-[#066747] font-bold ring-1 ring-[#07865B]"
+                              : "border-[#E7EBE8] bg-white text-[#171A19] text-xs"
                           }`}
                         >
                           <span className="mr-1">{item.icon}</span>
@@ -801,8 +793,8 @@ export function LoginPage({
                           onClick={() => setCarType(item.type)}
                           className={`p-1.5 rounded-lg border text-left transition-all ${
                             carType === item.type
-                              ? "border-blue-600 bg-blue-50 text-blue-900 font-bold ring-1 ring-blue-600"
-                              : "border-slate-200 bg-white text-slate-700 text-xs"
+                              ? "border-[#07865B] bg-[#E8F7EF] text-[#066747] font-bold ring-1 ring-[#07865B]"
+                              : "border-[#E7EBE8] bg-white text-[#171A19] text-xs"
                           }`}
                         >
                           <span className="mr-1">{item.icon}</span>
@@ -815,7 +807,7 @@ export function LoginPage({
                   {/* Car Model & Plate */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-bold text-[#171A19] mb-1">
                         Car Model
                       </label>
                       <input
@@ -824,11 +816,11 @@ export function LoginPage({
                         value={carName}
                         onChange={(e) => setCarName(e.target.value)}
                         placeholder="Hyundai Creta SX"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-bold text-[#171A19] mb-1">
                         Plate Number
                       </label>
                       <input
@@ -837,14 +829,14 @@ export function LoginPage({
                         value={carNumber}
                         onChange={(e) => setCarNumber(e.target.value)}
                         placeholder="KA 05 MN 4589"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300 uppercase font-mono"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#E7EBE8] uppercase font-mono focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                       />
                     </div>
                   </div>
 
                   {/* Service Address & Parking Spot */}
                   <div className="space-y-1.5">
-                    <label className="block text-[11px] font-bold text-slate-700">
+                    <label className="block text-[11px] font-bold text-[#171A19]">
                       Service Address & Parking Spot
                     </label>
                     <input
@@ -853,7 +845,7 @@ export function LoginPage({
                       value={streetAddress}
                       onChange={(e) => setStreetAddress(e.target.value)}
                       placeholder="Apartment / Villa Society Address"
-                      className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                     />
                     <input
                       type="text"
@@ -861,14 +853,14 @@ export function LoginPage({
                       value={parkingSpot}
                       onChange={(e) => setParkingSpot(e.target.value)}
                       placeholder="e.g. Basement 2, Pillar #45 (Covered Bay)"
-                      className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-blue-400 bg-blue-50/60 font-semibold text-blue-900"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#07865B]/40 bg-[#E8F7EF]/50 font-semibold text-[#066747] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                     />
                   </div>
 
                   <div className="pt-2 space-y-2">
                     <button
                       type="submit"
-                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                      className="w-full py-2.5 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-[#07865B]/20"
                     >
                       <PlusCircle className="w-4 h-4" />
                       <span>Complete Registration & Enter</span>
@@ -877,7 +869,7 @@ export function LoginPage({
                     <button
                       type="button"
                       onClick={() => onDemoLogin("customer")}
-                      className="w-full py-1.5 text-[11px] text-slate-500 hover:text-slate-700 underline text-center block"
+                      className="w-full py-1.5 text-[11px] text-[#707875] hover:text-[#171A19] underline text-center block"
                     >
                       Skip car setup for now (Add cars later)
                     </button>
@@ -891,19 +883,19 @@ export function LoginPage({
           {authRole === "station_head" && (
             <div className="space-y-4">
               <form onSubmit={handleStationHeadLoginSubmit} className="space-y-3">
-                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs text-indigo-900">
+                <div className="p-3 bg-[#E8F7EF] border border-[#07865B]/25 rounded-xl text-xs text-[#066747]">
                   <p className="font-bold flex items-center gap-1.5">
-                    <Building2 className="w-4 h-4 text-indigo-600" />
+                    <Building2 className="w-4 h-4 text-[#07865B]" />
                     Washing Station Hub Partner
                   </p>
-                  <p className="text-[11px] text-indigo-700 mt-1">
+                  <p className="text-[11px] text-[#066747] mt-1">
                     Receive bookings for your area, assign workers from your team, and settle online fees directly with the platform owner.
                   </p>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-700">
+                    <label className="text-xs font-bold text-[#171A19]">
                       Station Manager Username
                     </label>
                     <button
@@ -912,47 +904,47 @@ export function LoginPage({
                         setStationUsername("vikram");
                         setStationPassword("station123");
                       }}
-                      className="text-[10px] text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded font-mono font-medium"
+                      className="text-[10px] text-[#07865B] bg-[#E8F7EF] hover:bg-[#C7EED8] px-1.5 py-0.5 rounded font-mono font-medium"
                     >
                       fill: vikram
                     </button>
                   </div>
                   <div className="relative">
-                    <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <UserIcon className="w-4 h-4 text-[#707875] absolute left-3 top-2.5" />
                     <input
                       type="text"
                       required
                       value={stationUsername}
                       onChange={(e) => setStationUsername(e.target.value)}
                       placeholder="vikram"
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-300 font-medium focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                      className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-[#E7EBE8] font-medium focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                     />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-700">
+                    <label className="text-xs font-bold text-[#171A19]">
                       Password
                     </label>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-[#707875] font-mono">
                       demo: station123
                     </span>
                   </div>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <Lock className="w-4 h-4 text-[#707875] absolute left-3 top-2.5" />
                     <input
                       type={showPassword ? "text" : "password"}
                       required
                       value={stationPassword}
                       onChange={(e) => setStationPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-9 pr-10 py-2 text-sm rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                      className="w-full pl-9 pr-10 py-2 text-sm rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                      className="absolute right-3 top-2.5 text-[#707875] hover:text-[#171A19]"
                     >
                       {showPassword ? (
                         <EyeOff className="w-4 h-4" />
@@ -965,20 +957,20 @@ export function LoginPage({
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+                  className="w-full py-2.5 px-4 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-sm shadow-[#07865B]/20"
                 >
-                  <Building2 className="w-4 h-4 text-indigo-200" />
+                  <Building2 className="w-4 h-4 text-[#E8F7EF]" />
                   <span>Sign In as Station Head</span>
                 </button>
               </form>
 
-              <div className="pt-2 border-t border-slate-100">
+              <div className="pt-2 border-t border-[#E7EBE8]">
                 <button
                   type="button"
                   onClick={() => onDemoLogin("station_head")}
-                  className="w-full py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 border border-indigo-200"
+                  className="w-full py-2 px-3 bg-[#E8F7EF] hover:bg-[#C7EED8] text-[#066747] font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 border border-[#07865B]/25"
                 >
-                  <Zap className="w-3.5 h-3.5 text-indigo-600" />
+                  <Zap className="w-3.5 h-3.5 text-[#07865B]" />
                   <span>1-Tap Demo Station Head Login (Vikram Singh)</span>
                 </button>
               </div>
@@ -989,19 +981,19 @@ export function LoginPage({
           {authRole === "washer" && (
             <div className="space-y-4">
               <form onSubmit={handleWasherLoginSubmit} className="space-y-3">
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900">
+                <div className="p-3 bg-[#E8F7EF] border border-[#07865B]/25 rounded-xl text-xs text-[#066747]">
                   <p className="font-bold flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-blue-600" />
+                    <ShieldCheck className="w-4 h-4 text-[#07865B]" />
                     Field Washer Technician Portal
                   </p>
-                  <p className="text-[11px] text-blue-700 mt-1">
+                  <p className="text-[11px] text-[#066747] mt-1">
                     Execute dispatched washes, capture mandatory Before & After photos with retakes, and collect Cash or UPI payments.
                   </p>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-700">
+                    <label className="text-xs font-bold text-[#171A19]">
                       Technician Username
                     </label>
                     <button
@@ -1010,47 +1002,47 @@ export function LoginPage({
                         setWasherUsername("rajesh");
                         setWasherPassword("washer123");
                       }}
-                      className="text-[10px] text-blue-600 bg-blue-50 hover:bg-blue-100 px-1.5 py-0.5 rounded font-mono font-medium"
+                      className="text-[10px] text-[#07865B] bg-[#E8F7EF] hover:bg-[#C7EED8] px-1.5 py-0.5 rounded font-mono font-medium"
                     >
                       fill: rajesh
                     </button>
                   </div>
                   <div className="relative">
-                    <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <UserIcon className="w-4 h-4 text-[#707875] absolute left-3 top-2.5" />
                     <input
                       type="text"
                       required
                       value={washerUsername}
                       onChange={(e) => setWasherUsername(e.target.value)}
                       placeholder="rajesh"
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-300 font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-[#E7EBE8] font-medium focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                     />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-700">
+                    <label className="text-xs font-bold text-[#171A19]">
                       Password
                     </label>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-[#707875] font-mono">
                       demo: washer123
                     </span>
                   </div>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <Lock className="w-4 h-4 text-[#707875] absolute left-3 top-2.5" />
                     <input
                       type={showPassword ? "text" : "password"}
                       required
                       value={washerPassword}
                       onChange={(e) => setWasherPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-9 pr-10 py-2 text-sm rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="w-full pl-9 pr-10 py-2 text-sm rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                      className="absolute right-3 top-2.5 text-[#707875] hover:text-[#171A19]"
                     >
                       {showPassword ? (
                         <EyeOff className="w-4 h-4" />
@@ -1063,20 +1055,20 @@ export function LoginPage({
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+                  className="w-full py-2.5 px-4 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-sm shadow-[#07865B]/20"
                 >
-                  <ShieldCheck className="w-4 h-4 text-blue-400" />
+                  <ShieldCheck className="w-4 h-4 text-[#E8F7EF]" />
                   <span>Sign In as Field Washer</span>
                 </button>
               </form>
 
-              <div className="pt-2 border-t border-slate-100">
+              <div className="pt-2 border-t border-[#E7EBE8]">
                 <button
                   type="button"
                   onClick={() => onDemoLogin("washer")}
-                  className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 border border-slate-200"
+                  className="w-full py-2 px-3 bg-[#E8F7EF] hover:bg-[#C7EED8] text-[#066747] font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 border border-[#07865B]/25"
                 >
-                  <Zap className="w-3.5 h-3.5 text-slate-700" />
+                  <Zap className="w-3.5 h-3.5 text-[#07865B]" />
                   <span>1-Tap Demo Washer Login (Rajesh Kumar)</span>
                 </button>
               </div>
@@ -1084,15 +1076,15 @@ export function LoginPage({
           )}
 
           {/* Quick-Test Cheat Sheet Footer */}
-          <div className="mt-6 pt-4 border-t border-slate-100 text-center">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <div className="mt-6 pt-4 border-t border-[#E7EBE8] text-center">
+            <p className="text-[11px] font-bold text-[#707875] uppercase tracking-wider mb-2">
               ⚡ Instant 1-Click Role Switch
             </p>
             <div className="grid grid-cols-3 gap-1.5">
               <button
                 type="button"
                 onClick={() => onDemoLogin("customer")}
-                className="py-1.5 px-2 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg border border-slate-200 text-[11px] font-semibold transition-all flex items-center justify-center gap-1"
+                className="py-1.5 px-2 bg-[#F7F8F7] hover:bg-[#E8F7EF] text-[#171A19] hover:text-[#07865B] rounded-lg border border-[#E7EBE8] text-[11px] font-semibold transition-all flex items-center justify-center gap-1"
               >
                 <span>🚗</span>
                 <span>Customer</span>
@@ -1100,7 +1092,7 @@ export function LoginPage({
               <button
                 type="button"
                 onClick={() => onDemoLogin("station_head")}
-                className="py-1.5 px-2 bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 rounded-lg border border-slate-200 text-[11px] font-semibold transition-all flex items-center justify-center gap-1"
+                className="py-1.5 px-2 bg-[#F7F8F7] hover:bg-[#E8F7EF] text-[#171A19] hover:text-[#07865B] rounded-lg border border-[#E7EBE8] text-[11px] font-semibold transition-all flex items-center justify-center gap-1"
               >
                 <span>🏢</span>
                 <span>Station Head</span>
@@ -1108,7 +1100,7 @@ export function LoginPage({
               <button
                 type="button"
                 onClick={() => onDemoLogin("washer")}
-                className="py-1.5 px-2 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg border border-slate-200 text-[11px] font-semibold transition-all flex items-center justify-center gap-1"
+                className="py-1.5 px-2 bg-[#F7F8F7] hover:bg-[#E8F7EF] text-[#171A19] hover:text-[#07865B] rounded-lg border border-[#E7EBE8] text-[11px] font-semibold transition-all flex items-center justify-center gap-1"
               >
                 <span>🧽</span>
                 <span>Washer</span>

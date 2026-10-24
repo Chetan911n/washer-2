@@ -86,7 +86,6 @@ export function PhotoInspectionModal({
     };
 
     if (photoType === "before") {
-      // Replace existing angle photo or append
       const filtered = localBeforePhotos.filter(
         (p) => !(p.carId === activeCar.id && p.angle === currentAngle)
       );
@@ -102,7 +101,7 @@ export function PhotoInspectionModal({
   // Check if minimum before photos are satisfied
   const isBeforePhotosComplete = booking.cars.every((car) => {
     const carBeforePhotos = localBeforePhotos.filter((p) => p.carId === car.id);
-    return carBeforePhotos.length >= 2; // at least 2 key angles per car
+    return carBeforePhotos.length >= 2;
   });
 
   const isAfterPhotosReady = booking.cars.every((car) => {
@@ -116,7 +115,6 @@ export function PhotoInspectionModal({
   };
 
   const handleCompleteJobAction = () => {
-    // Generate WhatsApp Message URL
     const wa = generateWhatsAppMessage({
       customerName: booking.customerName,
       carNames: booking.cars.map((c) => c.name),
@@ -150,11 +148,11 @@ export function PhotoInspectionModal({
       >
         <div className="space-y-4">
           {/* Insurance Alert Banner */}
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 text-xs text-amber-900">
-            <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="p-3.5 bg-[#E8F7EF] border border-[#07865B]/25 rounded-2xl flex items-start gap-3 text-xs text-[#066747]">
+            <ShieldAlert className="w-5 h-5 text-[#07865B] shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold">Insurance & Damage Protection Protocol</p>
-              <p className="text-amber-700 text-[11px] mt-0.5">
+              <p className="font-extrabold text-[#171A19]">Insurance & Damage Protection Protocol</p>
+              <p className="text-[#066747] text-[11px] mt-0.5">
                 Always take timestamped before-photos of all sides and existing scratch spots before starting. This guarantees zero false damage claims against our washing team.
               </p>
             </div>
@@ -175,16 +173,16 @@ export function PhotoInspectionModal({
                   key={car.id}
                   type="button"
                   onClick={() => setActiveCarIndex(idx)}
-                  className={`px-3 py-2 rounded-xl text-xs font-bold border whitespace-nowrap transition-all flex items-center gap-2 ${
+                  className={`px-3 py-2 rounded-2xl text-xs font-bold border whitespace-nowrap transition-all flex items-center gap-2 ${
                     activeCarIndex === idx
-                      ? "border-blue-600 bg-blue-50 text-blue-700 ring-1 ring-blue-600"
-                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      ? "border-[#07865B] bg-[#E8F7EF] text-[#066747] ring-1 ring-[#07865B]"
+                      : "border-[#E7EBE8] bg-white text-[#707875] hover:bg-[#F7F8F7]"
                   }`}
                 >
                   <span>
                     Car #{idx + 1}: {car.name}
                   </span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-700">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white text-[#171A19] border border-[#E7EBE8]">
                     {photoType === "before"
                       ? `${beforeCount}/4 Before`
                       : `${afterCount}/4 After`}
@@ -196,30 +194,30 @@ export function PhotoInspectionModal({
 
           {/* Current Car Info */}
           {activeCar && (
-            <div className="p-3 bg-slate-100/70 rounded-xl flex items-center justify-between text-xs">
+            <div className="p-3 bg-[#F7F8F7] rounded-2xl flex items-center justify-between text-xs border border-[#E7EBE8]">
               <div>
-                <span className="font-bold text-slate-800 text-sm">
+                <span className="font-extrabold text-[#171A19] text-sm">
                   {activeCar.name} ({activeCar.type})
                 </span>
-                <p className="font-mono text-slate-500">{activeCar.carNumber}</p>
+                <p className="font-mono text-[#707875]">{activeCar.carNumber}</p>
               </div>
-              <div className="flex rounded-lg bg-white p-1 border border-slate-200 text-xs font-semibold">
+              <div className="flex rounded-xl bg-white p-1 border border-[#E7EBE8] text-xs font-semibold">
                 <button
                   onClick={() => setPhotoType("before")}
-                  className={`px-2.5 py-1 rounded-md transition-all ${
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
                     photoType === "before"
-                      ? "bg-amber-100 text-amber-800 font-bold"
-                      : "text-slate-500"
+                      ? "bg-amber-100 text-amber-900 font-bold"
+                      : "text-[#707875]"
                   }`}
                 >
                   Before Photos
                 </button>
                 <button
                   onClick={() => setPhotoType("after")}
-                  className={`px-2.5 py-1 rounded-md transition-all ${
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
                     photoType === "after"
-                      ? "bg-green-100 text-green-800 font-bold"
-                      : "text-slate-500"
+                      ? "bg-[#E8F7EF] text-[#07865B] font-bold"
+                      : "text-[#707875]"
                   }`}
                 >
                   After Photos
@@ -230,13 +228,13 @@ export function PhotoInspectionModal({
 
           {/* Angle Photo Grid */}
           <div>
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+            <h4 className="text-xs font-bold text-[#171A19] uppercase tracking-wider mb-2 flex items-center justify-between">
               <span>
                 {photoType === "before"
                   ? "Required Before Angles (Insurance Record)"
                   : "Completed After Angles (Clean Shiny Proof)"}
               </span>
-              <span className="text-[11px] font-normal text-slate-500">
+              <span className="text-[11px] font-normal text-[#707875]">
                 Tap any tile to capture or replace
               </span>
             </h4>
@@ -251,10 +249,10 @@ export function PhotoInspectionModal({
                   <div
                     key={angle}
                     onClick={() => handleOpenCapture(angle, photoType)}
-                    className={`relative rounded-xl border-2 border-dashed p-2 flex flex-col items-center justify-center text-center cursor-pointer min-h-[110px] transition-all overflow-hidden ${
+                    className={`relative rounded-2xl border-2 border-dashed p-2 flex flex-col items-center justify-center text-center cursor-pointer min-h-[110px] transition-all overflow-hidden ${
                       existing
-                        ? "border-green-500 bg-green-50/30"
-                        : "border-slate-300 hover:border-blue-400 bg-slate-50 hover:bg-white"
+                        ? "border-[#07865B] bg-[#E8F7EF]/30"
+                        : "border-[#E7EBE8] hover:border-[#07865B]/40 bg-[#F7F8F7] hover:bg-white"
                     }`}
                   >
                     {existing ? (
@@ -266,7 +264,7 @@ export function PhotoInspectionModal({
                           className="absolute inset-0 w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white p-1">
-                          <CheckCircle2 className="w-5 h-5 text-green-400 mb-0.5" />
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400 mb-0.5" />
                           <span className="text-[11px] font-bold">{angle}</span>
                           <span className="text-[9px] text-white/80 underline mt-1">
                             Tap to retake
@@ -275,11 +273,11 @@ export function PhotoInspectionModal({
                       </>
                     ) : (
                       <>
-                        <Camera className="w-6 h-6 text-slate-400 mb-1" />
-                        <span className="text-xs font-bold text-slate-700">
+                        <Camera className="w-6 h-6 text-[#707875] mb-1" />
+                        <span className="text-xs font-bold text-[#171A19]">
                           {angle}
                         </span>
-                        <span className="text-[10px] text-slate-400 mt-0.5">
+                        <span className="text-[10px] text-[#707875] mt-0.5">
                           Tap to photograph
                         </span>
                       </>
@@ -291,38 +289,37 @@ export function PhotoInspectionModal({
           </div>
 
           {/* Action Footer */}
-          <div className="pt-3 border-t border-slate-200">
+          <div className="pt-3 border-t border-[#E7EBE8]">
             {photoType === "before" ? (
               <div className="flex items-center justify-between gap-3">
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-[#707875]">
                   {isBeforePhotosComplete ? (
-                    <span className="text-green-600 font-semibold flex items-center gap-1">
+                    <span className="text-[#07865B] font-bold flex items-center gap-1">
                       <CheckCircle2 className="w-4 h-4" /> Ready to begin wash
                     </span>
                   ) : (
-                    <span className="text-amber-600 flex items-center gap-1">
-                      <AlertTriangle className="w-4 h-4" /> Please take at least 2 before-photos
+                    <span className="text-amber-700 font-semibold flex items-center gap-1">
+                      <AlertTriangle className="w-4 h-4 text-amber-600" /> Take at least 2 before-photos
                     </span>
                   )}
                 </div>
                 <button
                   type="button"
                   onClick={handleSaveBeforeAndStartWash}
-                  className="py-2.5 px-5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm"
+                  className="py-2.5 px-5 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm shadow-[#07865B]/20"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>Start Wash & Switch to After Photos</span>
                 </button>
               </div>
             ) : (
-              /* After photos screen: Retake photos option beside Complete Job */
               <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
                 <button
                   type="button"
                   onClick={handleRetakeAllAfterPhotos}
-                  className="py-2.5 px-4 border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl text-xs transition-colors flex items-center gap-1.5"
+                  className="py-2.5 px-4 border border-[#E7EBE8] hover:bg-[#F7F8F7] text-[#171A19] font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                  <RotateCcw className="w-3.5 h-3.5 text-[#707875]" />
                   <span>Retake Photos (Blurry/Bad)</span>
                 </button>
 
@@ -330,10 +327,10 @@ export function PhotoInspectionModal({
                   type="button"
                   disabled={!isAfterPhotosReady}
                   onClick={handleCompleteJobAction}
-                  className={`py-2.5 px-6 font-bold rounded-xl text-xs transition-all flex items-center gap-2 shadow-md ${
+                  className={`py-2.5 px-6 font-bold rounded-xl text-xs transition-all flex items-center gap-2 shadow-sm ${
                     isAfterPhotosReady
-                      ? "bg-green-600 hover:bg-green-700 text-white shadow-green-600/25"
-                      : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                      ? "bg-[#07865B] hover:bg-[#066747] text-white shadow-[#07865B]/20"
+                      : "bg-[#E7EBE8] text-[#707875] cursor-not-allowed"
                   }`}
                 >
                   <CheckCircle2 className="w-4 h-4" />
@@ -368,25 +365,25 @@ export function PhotoInspectionModal({
         title="Job Completed & Photos Dispatched!"
       >
         <div className="space-y-4 text-center">
-          <div className="w-14 h-14 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+          <div className="w-14 h-14 bg-[#E8F7EF] text-[#07865B] rounded-2xl flex items-center justify-center mx-auto shadow-inner">
             <CheckCircle2 className="w-8 h-8" />
           </div>
 
           <div>
-            <h3 className="text-base font-extrabold text-slate-900">
+            <h3 className="text-base font-extrabold text-[#171A19]">
               Photos Prepared for WhatsApp & Payment Opened!
             </h3>
-            <p className="text-xs text-slate-600 mt-1">
+            <p className="text-xs text-[#707875] mt-1">
               Customer <strong>{booking.customerName}</strong> ({booking.customerPhone}) now has the UPI payment screen triggered automatically.
             </p>
           </div>
 
-          <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-left text-xs text-green-900 space-y-1">
+          <div className="p-3 bg-[#E8F7EF] border border-[#07865B]/20 rounded-xl text-left text-xs text-[#066747] space-y-1">
             <div className="font-bold flex items-center gap-1.5">
-              <Send className="w-3.5 h-3.5 text-green-600" />
+              <Send className="w-3.5 h-3.5 text-[#07865B]" />
               <span>WhatsApp Message Content:</span>
             </div>
-            <p className="text-[11px] text-green-800">
+            <p className="text-[11px] text-[#066747]">
               Clean photos summary link & verification proof ready to dispatch to customer WhatsApp.
             </p>
           </div>
@@ -396,7 +393,7 @@ export function PhotoInspectionModal({
               href={whatsAppUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+              className="flex-1 py-2.5 px-4 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm shadow-[#07865B]/20"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span>Send via WhatsApp App</span>
@@ -408,7 +405,7 @@ export function PhotoInspectionModal({
                 setShowWhatsAppSentModal(false);
                 onClose();
               }}
-              className="py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-xs transition-colors"
+              className="py-2.5 px-4 bg-[#171A19] hover:bg-[#232725] text-white font-semibold rounded-xl text-xs transition-colors"
             >
               Done
             </button>

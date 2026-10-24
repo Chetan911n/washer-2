@@ -20,6 +20,9 @@ import {
   Smartphone,
   Flame,
   Trash2,
+  Home,
+  CalendarCheck,
+  Layers,
 } from "lucide-react";
 
 interface CustomerViewProps {
@@ -140,7 +143,27 @@ export function CustomerView({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-16 sm:pb-0">
+      {/* User Greeting & Quick Location Indicator */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 className="text-xl font-black text-[#171A19] tracking-tight">
+            Hello, {user.name ? user.name.split(" ")[0] : "Chetan"} 👋
+          </h2>
+          <p className="text-xs text-[#707875] mt-0.5">
+            Doorstep car wash with zero-scratch guarantee & photo proof
+          </p>
+        </div>
+
+        {user.addresses && user.addresses.length > 0 && (
+          <div className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E7EBE8] text-xs text-[#171A19] shadow-2xs">
+            <MapPin className="w-3.5 h-3.5 text-[#07865B]" />
+            <span className="font-semibold">{user.addresses[0].street.split(",")[0]}</span>
+            <span className="text-[10px] text-[#707875] font-mono">• {user.addresses[0].city}</span>
+          </div>
+        )}
+      </div>
+
       {/* If a completed wash was paid and needs review, show unmissable top banner */}
       {bookings.some((b) => b.status === "PAID") && (
         <div className="p-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl shadow-md flex items-center justify-between gap-3 animate-pulse">
@@ -171,19 +194,19 @@ export function CustomerView({
         </div>
       )}
 
-      {/* Hero Action Banner: "Book a Car Wash" */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 text-white p-6 sm:p-8 shadow-xl">
+      {/* Hero Action Banner: "Doorstep Car Wash at Your Parking Spot" */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#07865B] via-[#066747] to-[#04412E] text-white p-6 sm:p-8 shadow-card">
         <div className="relative z-10 max-w-lg space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold text-blue-100">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold text-[#E8F7EF]">
             <Flame className="w-3.5 h-3.5 text-amber-300" />
             <span>Zero Damage Guarantee • Insurance Photos Included</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
             Doorstep Car Wash at Your Parking Spot
           </h1>
 
-          <p className="text-xs sm:text-sm text-blue-100 leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#E8F7EF] leading-relaxed">
             Wash 1, 2, or multiple cars together. Verified washers capture mandatory before/after photos and accept UPI on completion.
           </p>
 
@@ -191,16 +214,16 @@ export function CustomerView({
             <button
               type="button"
               onClick={() => setIsBookingOpen(true)}
-              className="py-3 px-6 bg-white text-blue-700 hover:bg-blue-50 font-extrabold rounded-2xl text-sm transition-all shadow-lg shadow-black/10 flex items-center gap-2 hover:scale-[1.02]"
+              className="py-3 px-6 bg-white text-[#07865B] hover:bg-[#F2FAF6] font-black rounded-2xl text-sm transition-all shadow-md shadow-black/15 flex items-center gap-2 hover:scale-[1.02]"
             >
-              <Sparkles className="w-4 h-4 text-blue-600" />
+              <Sparkles className="w-4 h-4 text-[#07865B]" />
               <span>Book a Car Wash</span>
             </button>
 
             <button
               type="button"
               onClick={() => setIsAddCarOpen(true)}
-              className="py-3 px-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-xs font-semibold backdrop-blur-sm transition-colors flex items-center gap-1.5"
+              className="py-3 px-4 bg-white/10 hover:bg-white/20 border border-white/25 rounded-2xl text-xs font-semibold backdrop-blur-sm transition-colors flex items-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Vehicle</span>
@@ -208,30 +231,30 @@ export function CustomerView({
           </div>
         </div>
 
-        <div className="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-cyan-400/20 blur-3xl pointer-events-none" />
+        <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-emerald-400/20 blur-3xl pointer-events-none" />
       </div>
 
       {/* Real-Time Active Booking Status Card */}
       {activeBooking && (
-        <div className="bg-white rounded-2xl border-2 border-blue-500/30 p-5 shadow-md space-y-4 animate-in fade-in-50 duration-300">
-          <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        <div className="bg-white rounded-3xl border border-[#07865B]/30 p-5 shadow-card space-y-4 animate-in fade-in-50 duration-300">
+          <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#E7EBE8]">
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-full bg-[#E8F7EF] text-[#07865B] border border-[#07865B]/20">
                   {activeBooking.bookingCode}
                 </span>
-                <span className="text-xs font-bold text-slate-800">
+                <span className="text-xs font-bold text-[#171A19]">
                   {activeBooking.washType}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-[#707875] mt-1">
                 {activeBooking.cars.map((c) => c.name).join(" • ")} ({activeBooking.cars.length} vehicles)
               </p>
             </div>
 
             <div className="text-right">
-              <span className="text-xs text-slate-400">Total Price</span>
-              <p className="text-lg font-black text-slate-900">
+              <span className="text-xs text-[#707875]">Total Price</span>
+              <p className="text-lg font-black text-[#171A19]">
                 ₹{activeBooking.totalAmount}
               </p>
             </div>
@@ -240,49 +263,49 @@ export function CustomerView({
           {/* Stepper */}
           <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-bold">
             <div
-              className={`p-2 rounded-xl border ${
+              className={`p-2 rounded-2xl border transition-all ${
                 activeBooking.status !== "PENDING"
-                  ? "bg-blue-50 border-blue-500 text-blue-700"
-                  : "bg-slate-50 border-slate-200 text-slate-400"
+                  ? "bg-[#E8F7EF] border-[#07865B]/30 text-[#066747]"
+                  : "bg-[#F7F8F7] border-[#E7EBE8] text-[#707875]"
               }`}
             >
-              <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-blue-600" />
+              <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-[#07865B]" />
               <span>Assigned</span>
             </div>
 
             <div
-              className={`p-2 rounded-xl border ${
+              className={`p-2 rounded-2xl border transition-all ${
                 activeBooking.beforePhotos.length > 0 ||
                 activeBooking.status === "WASH_IN_PROGRESS" ||
                 activeBooking.status === "PAYMENT_PENDING" ||
                 activeBooking.status === "PAID"
-                  ? "bg-blue-50 border-blue-500 text-blue-700"
-                  : "bg-slate-50 border-slate-200 text-slate-400"
+                  ? "bg-[#E8F7EF] border-[#07865B]/30 text-[#066747]"
+                  : "bg-[#F7F8F7] border-[#E7EBE8] text-[#707875]"
               }`}
             >
-              <ShieldCheck className="w-4 h-4 mx-auto mb-1 text-blue-600" />
+              <ShieldCheck className="w-4 h-4 mx-auto mb-1 text-[#07865B]" />
               <span>Inspection</span>
             </div>
 
             <div
-              className={`p-2 rounded-xl border ${
+              className={`p-2 rounded-2xl border transition-all ${
                 activeBooking.status === "WASH_IN_PROGRESS" ||
                 activeBooking.status === "PAYMENT_PENDING" ||
                 activeBooking.status === "PAID"
-                  ? "bg-blue-50 border-blue-500 text-blue-700"
-                  : "bg-slate-50 border-slate-200 text-slate-400"
+                  ? "bg-[#E8F7EF] border-[#07865B]/30 text-[#066747]"
+                  : "bg-[#F7F8F7] border-[#E7EBE8] text-[#707875]"
               }`}
             >
-              <Sparkles className="w-4 h-4 mx-auto mb-1 text-blue-600" />
+              <Sparkles className="w-4 h-4 mx-auto mb-1 text-[#07865B]" />
               <span>Washing</span>
             </div>
 
             <div
-              className={`p-2 rounded-xl border ${
+              className={`p-2 rounded-2xl border transition-all ${
                 activeBooking.status === "PAYMENT_PENDING" ||
                 activeBooking.status === "PAID"
-                  ? "bg-amber-50 border-amber-500 text-amber-700"
-                  : "bg-slate-50 border-slate-200 text-slate-400"
+                  ? "bg-amber-50 border-amber-500/30 text-amber-800"
+                  : "bg-[#F7F8F7] border-[#E7EBE8] text-[#707875]"
               }`}
             >
               <Smartphone className="w-4 h-4 mx-auto mb-1 text-amber-600" />
@@ -292,7 +315,7 @@ export function CustomerView({
 
           {/* Action trigger if payment is pending */}
           {activeBooking.status === "PAYMENT_PENDING" && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3">
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-bold text-amber-900">
                   🎉 Job Completed by Washer!
@@ -304,7 +327,7 @@ export function CustomerView({
               <button
                 type="button"
                 onClick={() => setActivePaymentBooking(activeBooking)}
-                className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-sm"
+                className="py-2 px-4 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-[#07865B]/20"
               >
                 <span>Pay ₹{activeBooking.totalAmount}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -314,12 +337,12 @@ export function CustomerView({
 
           {/* Action trigger if paid awaiting review */}
           {activeBooking.status === "PAID" && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-xl flex items-center justify-between gap-3">
+            <div className="p-3 bg-[#E8F7EF] border border-[#07865B]/25 rounded-2xl flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-bold text-green-900">
+                <p className="text-xs font-bold text-[#066747]">
                   Payment Received!
                 </p>
-                <p className="text-[11px] text-green-700">
+                <p className="text-[11px] text-[#066747]">
                   Rate your washer {activeBooking.washer?.name || "Rajesh"} to complete the wash.
                 </p>
               </div>
@@ -329,7 +352,7 @@ export function CustomerView({
                   setReviewBookingTarget(activeBooking);
                   setCurrentView("review");
                 }}
-                className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-sm"
+                className="py-2 px-4 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-[#07865B]/20"
               >
                 <span>Write Review</span>
                 <Star className="w-3.5 h-3.5" />
@@ -343,9 +366,9 @@ export function CustomerView({
             <button
               type="button"
               onClick={() => setViewingPhotosBooking(activeBooking)}
-              className="w-full py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              className="w-full py-2.5 border border-[#E7EBE8] hover:bg-[#F7F8F7] text-[#171A19] rounded-2xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
             >
-              <Eye className="w-3.5 h-3.5 text-blue-600" />
+              <Eye className="w-3.5 h-3.5 text-[#07865B]" />
               <span>
                 View Inspection Photos ({activeBooking.beforePhotos.length} Before /{" "}
                 {activeBooking.afterPhotos.length} After)
@@ -359,11 +382,11 @@ export function CustomerView({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <CarIcon className="w-4 h-4 text-blue-600" />
+            <h3 className="text-sm font-extrabold text-[#171A19] uppercase tracking-wider flex items-center gap-2">
+              <CarIcon className="w-4 h-4 text-[#07865B]" />
               <span>My Garage ({user.garage?.length || 0} Cars)</span>
             </h3>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-[#707875]">
               {user.garage && user.garage.length > 0
                 ? "Select any of these when booking a doorstep wash"
                 : "No vehicles saved yet. Add your car to book a doorstep wash!"}
@@ -389,7 +412,7 @@ export function CustomerView({
             <button
               type="button"
               onClick={() => setIsAddCarOpen(true)}
-              className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors"
+              className="text-xs font-bold text-[#07865B] hover:text-[#066747] bg-[#E8F7EF] hover:bg-[#C7EED8] px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors border border-[#07865B]/20"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Car</span>
@@ -398,20 +421,20 @@ export function CustomerView({
         </div>
 
         {(!user.garage || user.garage.length === 0) ? (
-          <div className="p-8 border-2 border-dashed border-slate-200 rounded-3xl text-center bg-white space-y-3 shadow-sm">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center text-xl">
+          <div className="p-8 border-2 border-dashed border-[#E7EBE8] rounded-3xl text-center bg-white space-y-3 shadow-2xs">
+            <div className="w-12 h-12 rounded-2xl bg-[#F7F8F7] text-[#707875] mx-auto flex items-center justify-center text-xl">
               🚗
             </div>
             <div>
-              <h4 className="font-bold text-sm text-slate-800">Your Garage is Empty</h4>
-              <p className="text-xs text-slate-500 mt-0.5 max-w-sm mx-auto">
-                All previous cars have been removed. Add your vehicle details to start booking doorstep car washes.
+              <h4 className="font-bold text-sm text-[#171A19]">Your Garage is Empty</h4>
+              <p className="text-xs text-[#707875] mt-0.5 max-w-sm mx-auto">
+                Add your vehicle details to start booking doorstep car washes right at your parking spot.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setIsAddCarOpen(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors"
+              className="px-4 py-2 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-xs inline-flex items-center gap-1.5 shadow-sm shadow-[#07865B]/20 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>Add Your Car</span>
@@ -422,14 +445,14 @@ export function CustomerView({
             {user.garage.map((car) => (
               <div
                 key={car.id}
-                className="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-sm hover:shadow-md transition-shadow relative group"
+                className="bg-white rounded-2xl border border-[#E7EBE8] p-4 shadow-2xs hover:shadow-card transition-shadow relative group"
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <h4 className="font-bold text-sm text-slate-900">
+                    <h4 className="font-extrabold text-sm text-[#171A19]">
                       {car.name}
                     </h4>
-                    <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                    <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F7F8F7] text-[#171A19] border border-[#E7EBE8]">
                       {car.type}
                     </span>
                   </div>
@@ -444,17 +467,17 @@ export function CustomerView({
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
-                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
+                    <div className="w-7 h-7 rounded-xl bg-[#E8F7EF] text-[#07865B] flex items-center justify-center font-bold text-xs">
                       🚗
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="font-mono font-bold text-slate-600">
+                <div className="mt-3 pt-2.5 border-t border-[#E7EBE8] flex items-center justify-between text-xs">
+                  <span className="font-mono font-bold text-[#171A19]">
                     {car.carNumber}
                   </span>
-                  <span className="text-slate-400 text-[11px]">
+                  <span className="text-[#707875] text-[11px]">
                     {car.color || "Color"}
                   </span>
                 </div>
@@ -468,11 +491,11 @@ export function CustomerView({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-blue-600" />
+            <h3 className="text-sm font-extrabold text-[#171A19] uppercase tracking-wider flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-[#07865B]" />
               <span>Saved Wash Locations ({user.addresses?.length || 0})</span>
             </h3>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-[#707875]">
               {user.addresses && user.addresses.length > 0
                 ? "Manage your doorstep service locations & parking bay details"
                 : "No locations saved yet. Add your address & parking spot below."}
@@ -498,7 +521,7 @@ export function CustomerView({
             <button
               type="button"
               onClick={() => setIsAddAddressOpen(!isAddAddressOpen)}
-              className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors"
+              className="text-xs font-bold text-[#07865B] hover:text-[#066747] bg-[#E8F7EF] hover:bg-[#C7EED8] px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors border border-[#07865B]/20"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>{isAddAddressOpen ? "Cancel" : "Add Location"}</span>
@@ -508,57 +531,57 @@ export function CustomerView({
 
         {/* Inline Add Address Form */}
         {isAddAddressOpen && (
-          <form onSubmit={handleSaveAddress} className="p-4 bg-white border border-blue-200 rounded-2xl space-y-3 shadow-sm">
-            <h4 className="text-xs font-bold text-slate-800">Add New Doorstep Location</h4>
+          <form onSubmit={handleSaveAddress} className="p-4 bg-white border border-[#07865B]/30 rounded-2xl space-y-3 shadow-card">
+            <h4 className="text-xs font-bold text-[#171A19]">Add New Doorstep Location</h4>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[10px] font-bold text-slate-600 mb-1">Location Label</label>
+                <label className="block text-[10px] font-bold text-[#707875] mb-1">Location Label</label>
                 <input
                   type="text"
                   required
                   value={addrLabel}
                   onChange={(e) => setAddrLabel(e.target.value)}
                   placeholder="e.g. Home, Office"
-                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B] outline-none"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-600 mb-1">City</label>
+                <label className="block text-[10px] font-bold text-[#707875] mb-1">City</label>
                 <input
                   type="text"
                   required
                   value={addrCity}
                   onChange={(e) => setAddrCity(e.target.value)}
                   placeholder="Bangalore"
-                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B] outline-none"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-600 mb-1">Street / Apartment Address</label>
+              <label className="block text-[10px] font-bold text-[#707875] mb-1">Street / Apartment Address</label>
               <input
                 type="text"
                 required
                 value={addrStreet}
                 onChange={(e) => setAddrStreet(e.target.value)}
                 placeholder="e.g. Prestige Ferns Residency, Tower 4, Flat 802"
-                className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B] outline-none"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-blue-900 mb-1">Exact Parking Spot / Bay Number</label>
+              <label className="block text-[10px] font-bold text-[#066747] mb-1">Exact Parking Spot / Bay Number</label>
               <input
                 type="text"
                 required
                 value={addrSpot}
                 onChange={(e) => setAddrSpot(e.target.value)}
                 placeholder="e.g. Basement 2, Pillar #45 (Covered Bay)"
-                className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-blue-400 bg-blue-50/50 font-medium text-blue-900"
+                className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#07865B]/40 bg-[#E8F7EF]/40 font-medium text-[#066747] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B] outline-none"
               />
             </div>
             <button
               type="submit"
-              className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1 shadow-sm"
+              className="w-full py-2 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1 shadow-sm shadow-[#07865B]/20"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Save Location</span>
@@ -567,20 +590,20 @@ export function CustomerView({
         )}
 
         {(!user.addresses || user.addresses.length === 0) && !isAddAddressOpen ? (
-          <div className="p-8 border-2 border-dashed border-slate-200 rounded-3xl text-center bg-white space-y-3 shadow-sm">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center text-xl">
+          <div className="p-8 border-2 border-dashed border-[#E7EBE8] rounded-3xl text-center bg-white space-y-3 shadow-2xs">
+            <div className="w-12 h-12 rounded-2xl bg-[#F7F8F7] text-[#707875] mx-auto flex items-center justify-center text-xl">
               📍
             </div>
             <div>
-              <h4 className="font-bold text-sm text-slate-800">No Saved Locations</h4>
-              <p className="text-xs text-slate-500 mt-0.5 max-w-sm mx-auto">
-                All previous locations have been removed. Add your building address and exact parking bay to receive doorstep washes.
+              <h4 className="font-bold text-sm text-[#171A19]">No Saved Locations</h4>
+              <p className="text-xs text-[#707875] mt-0.5 max-w-sm mx-auto">
+                Add your building address and exact parking bay to receive doorstep washes.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setIsAddAddressOpen(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors"
+              className="px-4 py-2 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-xs inline-flex items-center gap-1.5 shadow-sm shadow-[#07865B]/20 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>Add Your First Location</span>
@@ -591,12 +614,12 @@ export function CustomerView({
             {user.addresses?.map((addr) => (
               <div
                 key={addr.id}
-                className="p-3.5 bg-white border border-slate-200 rounded-2xl text-xs space-y-2 shadow-sm hover:shadow-md transition-shadow relative group"
+                className="p-4 bg-white border border-[#E7EBE8] rounded-2xl text-xs space-y-2 shadow-2xs hover:shadow-card transition-shadow relative group"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-800 text-sm">{addr.label}</span>
-                    <span className="text-[10px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full">
+                    <span className="font-extrabold text-[#171A19] text-sm">{addr.label}</span>
+                    <span className="text-[10px] bg-[#F7F8F7] text-[#707875] font-semibold px-2 py-0.5 rounded-full border border-[#E7EBE8]">
                       {addr.city}
                     </span>
                   </div>
@@ -611,9 +634,9 @@ export function CustomerView({
                     </button>
                   )}
                 </div>
-                <p className="text-slate-600 leading-snug">{addr.street}</p>
+                <p className="text-[#707875] leading-snug">{addr.street}</p>
                 <div className="pt-1">
-                  <p className="text-blue-800 font-bold bg-blue-50 border border-blue-200/60 inline-block px-2 py-1 rounded-lg text-[11px]">
+                  <p className="text-[#066747] font-bold bg-[#E8F7EF] border border-[#07865B]/20 inline-block px-2.5 py-1 rounded-xl text-[11px]">
                     Parking Spot: {addr.parkingSpot}
                   </p>
                 </div>
@@ -621,6 +644,42 @@ export function CustomerView({
             ))}
           </div>
         )}
+      </div>
+
+      {/* Mobile-Friendly Bottom Navigation Bar */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E7EBE8] py-2 px-6 flex items-center justify-around text-[10px] font-bold text-[#707875] shadow-lg">
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="flex flex-col items-center gap-1 text-[#07865B]"
+        >
+          <Home className="w-4 h-4" />
+          <span>Home</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsBookingOpen(true)}
+          className="flex flex-col items-center gap-1 hover:text-[#07865B]"
+        >
+          <CalendarCheck className="w-4 h-4" />
+          <span>Book</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsAddCarOpen(true)}
+          className="flex flex-col items-center gap-1 hover:text-[#07865B]"
+        >
+          <CarIcon className="w-4 h-4" />
+          <span>Garage</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsAddAddressOpen(true)}
+          className="flex flex-col items-center gap-1 hover:text-[#07865B]"
+        >
+          <MapPin className="w-4 h-4" />
+          <span>Location</span>
+        </button>
       </div>
 
       {/* Modals */}
@@ -659,14 +718,15 @@ export function CustomerView({
         >
           <div className="space-y-4">
             <div>
-              <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2">
-                🛡️ Before Photos (Insurance Damage Verification)
+              <h4 className="text-xs font-bold text-[#066747] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-[#07865B]" />
+                Before Photos (Insurance Damage Verification)
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {viewingPhotosBooking.beforePhotos.map((p) => (
                   <div
                     key={p.id}
-                    className="aspect-video bg-black rounded-xl overflow-hidden relative group"
+                    className="aspect-video bg-black rounded-2xl overflow-hidden relative group"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -684,15 +744,16 @@ export function CustomerView({
             </div>
 
             {viewingPhotosBooking.afterPhotos.length > 0 && (
-              <div className="pt-2 border-t border-slate-200">
-                <h4 className="text-xs font-bold text-green-700 uppercase tracking-wider mb-2">
-                  ✨ Clean After Photos
+              <div className="pt-2 border-t border-[#E7EBE8]">
+                <h4 className="text-xs font-bold text-[#07865B] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#07865B]" />
+                  Clean After Photos
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {viewingPhotosBooking.afterPhotos.map((p) => (
                     <div
                       key={p.id}
-                      className="aspect-video bg-black rounded-xl overflow-hidden relative"
+                      className="aspect-video bg-black rounded-2xl overflow-hidden relative"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img

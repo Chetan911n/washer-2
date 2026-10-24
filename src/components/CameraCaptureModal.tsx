@@ -134,18 +134,18 @@ export function CameraCaptureModal({
     >
       <div className="space-y-4">
         {/* Car header */}
-        <div className="p-2.5 bg-slate-100 rounded-xl flex items-center justify-between text-xs">
+        <div className="p-3 bg-[#F7F8F7] rounded-2xl flex items-center justify-between text-xs border border-[#E7EBE8]">
           <div>
-            <span className="font-bold text-slate-800">{carName}</span>
-            <span className="ml-2 font-mono text-slate-500">{carNumber}</span>
+            <span className="font-extrabold text-[#171A19]">{carName}</span>
+            <span className="ml-2 font-mono text-[#707875]">{carNumber}</span>
           </div>
-          <span className="px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px] bg-blue-100 text-blue-700">
+          <span className="px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider text-[10px] bg-[#E8F7EF] text-[#07865B] border border-[#07865B]/20">
             {angle}
           </span>
         </div>
 
         {/* Viewport */}
-        <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-slate-300 flex items-center justify-center">
+        <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-[#E7EBE8] flex items-center justify-center">
           {capturedImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -169,7 +169,7 @@ export function CameraCaptureModal({
                 <div className="border border-white/10" />
                 <div className="border border-white/10" />
                 <div className="border border-white/10 flex items-center justify-center">
-                  <span className="text-[10px] text-white/70 bg-black/40 px-2 py-0.5 rounded">
+                  <span className="text-[10px] text-white/80 bg-black/50 px-2 py-0.5 rounded-full backdrop-blur-xs">
                     Align {angle}
                   </span>
                 </div>
@@ -202,7 +202,7 @@ export function CameraCaptureModal({
                 <button
                   type="button"
                   onClick={snapPhoto}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
+                  className="w-full py-3 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm shadow-[#07865B]/20 transition-all"
                 >
                   <Camera className="w-5 h-5" />
                   <span>Capture Photo</span>
@@ -210,8 +210,8 @@ export function CameraCaptureModal({
               )}
 
               <div className="grid grid-cols-2 gap-2">
-                <label className="py-2 px-3 border border-slate-300 hover:bg-slate-50 rounded-xl cursor-pointer text-xs font-semibold text-slate-700 flex items-center justify-center gap-1.5 text-center">
-                  <Upload className="w-4 h-4 text-slate-500" />
+                <label className="py-2.5 px-3 border border-[#E7EBE8] hover:bg-[#F7F8F7] rounded-xl cursor-pointer text-xs font-semibold text-[#171A19] flex items-center justify-center gap-1.5 text-center transition-colors">
+                  <Upload className="w-4 h-4 text-[#707875]" />
                   <span>Upload Image</span>
                   <input
                     type="file"
@@ -225,9 +225,9 @@ export function CameraCaptureModal({
                 <button
                   type="button"
                   onClick={handleUseSample}
-                  className="py-2 px-3 border border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-semibold text-slate-700 flex items-center justify-center gap-1.5"
+                  className="py-2.5 px-3 border border-[#E7EBE8] hover:bg-[#F7F8F7] rounded-xl text-xs font-semibold text-[#171A19] flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  <RefreshCw className="w-4 h-4 text-blue-600" />
+                  <RefreshCw className="w-4 h-4 text-[#07865B]" />
                   <span>Demo High-Res</span>
                 </button>
               </div>
@@ -237,7 +237,7 @@ export function CameraCaptureModal({
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm"
+                className="w-full py-2.5 bg-[#07865B] hover:bg-[#066747] text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm shadow-[#07865B]/20 transition-all"
               >
                 <Check className="w-4 h-4" />
                 <span>Save This Photo</span>
@@ -249,9 +249,9 @@ export function CameraCaptureModal({
                   setCapturedImage(null);
                   startCamera();
                 }}
-                className="w-full py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5"
+                className="w-full py-2 border border-[#E7EBE8] hover:bg-[#F7F8F7] text-[#171A19] font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw className="w-3.5 h-3.5 text-[#707875]" />
                 <span>Retake / Reshoot (Blurry/Bad Light)</span>
               </button>
             </div>
@@ -259,8 +259,8 @@ export function CameraCaptureModal({
         </div>
 
         {photoType === "before" && (
-          <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-[11px] text-amber-800">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="p-3 bg-[#E8F7EF] border border-[#07865B]/25 rounded-2xl flex items-start gap-2 text-[11px] text-[#066747]">
+            <AlertCircle className="w-4 h-4 text-[#07865B] shrink-0 mt-0.5" />
             <span>
               <strong>Insurance Protection:</strong> These photos prove pre-existing scratches/dents so no damage is mistakenly attributed to your wash team.
             </span>

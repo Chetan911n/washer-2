@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Sparkles, ShieldCheck, Car, LogOut, LogIn, Building2 } from "lucide-react";
+import { Sparkles, ShieldCheck, Car, LogOut, LogIn, Building2, Droplets } from "lucide-react";
 import { UserRole } from "@/lib/types";
 
 interface HeaderProps {
@@ -26,23 +26,23 @@ export function Header({
   onLogout,
 }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E7EBE8] shadow-2xs">
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
         {/* Brand */}
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-            <Sparkles className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#07865B] to-[#066747] flex items-center justify-center text-white shadow-md shadow-[#07865B]/20">
+            <Droplets className="w-5 h-5 fill-white/20" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-slate-900 text-lg tracking-tight">
+              <span className="font-extrabold text-[#171A19] text-lg tracking-tight">
                 AppWasher
               </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 uppercase tracking-wider">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E8F7EF] text-[#07865B] uppercase tracking-wider border border-[#07865B]/20">
                 Partner Hub
               </span>
             </div>
-            <p className="text-xs text-slate-500 hidden sm:block">
+            <p className="text-[11px] text-[#707875] hidden sm:block">
               Station Head • Crew Dispatch • Cash Settlement
             </p>
           </div>
@@ -52,32 +52,32 @@ export function Header({
         {isLoggedIn ? (
           <div className="flex items-center">
             {role === "customer" && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold shadow-sm">
-                <Car className="w-3.5 h-3.5 text-blue-600" />
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#E8F7EF] border border-[#07865B]/25 text-[#07865B] text-xs font-bold shadow-2xs">
+                <Car className="w-3.5 h-3.5 text-[#07865B]" />
                 <span>Customer Portal</span>
               </div>
             )}
             {role === "station_head" && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold shadow-sm">
-                <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F2FAF6] border border-[#07865B]/30 text-[#066747] text-xs font-bold shadow-2xs">
+                <Building2 className="w-3.5 h-3.5 text-[#07865B]" />
                 <span>Station Head Hub</span>
               </div>
             )}
             {role === "washer" && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold shadow-sm">
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F7F8F7] border border-[#E7EBE8] text-[#171A19] text-xs font-bold shadow-2xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#07865B]" />
                 <span>Field Washer Portal</span>
               </div>
             )}
           </div>
         ) : (
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
+          <div className="flex items-center bg-[#F7F8F7] p-1 rounded-xl border border-[#E7EBE8] text-xs font-semibold">
             <button
               onClick={() => onRoleChange("customer")}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all ${
                 role === "customer"
-                  ? "bg-white text-blue-700 shadow-sm font-bold"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-[#07865B] text-white shadow-xs font-bold"
+                  : "text-[#707875] hover:text-[#171A19]"
               }`}
             >
               <Car className="w-3.5 h-3.5" />
@@ -86,10 +86,10 @@ export function Header({
 
             <button
               onClick={() => onRoleChange("station_head")}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all ${
                 role === "station_head"
-                  ? "bg-indigo-600 text-white shadow-sm font-bold"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-[#07865B] text-white shadow-xs font-bold"
+                  : "text-[#707875] hover:text-[#171A19]"
               }`}
             >
               <Building2 className="w-3.5 h-3.5" />
@@ -98,10 +98,10 @@ export function Header({
 
             <button
               onClick={() => onRoleChange("washer")}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all ${
                 role === "washer"
-                  ? "bg-blue-600 text-white shadow-sm font-bold"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-[#07865B] text-white shadow-xs font-bold"
+                  : "text-[#707875] hover:text-[#171A19]"
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -113,22 +113,22 @@ export function Header({
         {/* Profile / Auth */}
         {isLoggedIn ? (
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-left">
-              <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+            <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-[#E7EBE8] bg-[#F7F8F7] text-left">
+              <div className="w-7 h-7 rounded-full bg-[#07865B] text-white flex items-center justify-center text-xs font-bold shadow-2xs">
                 {userName ? userName.charAt(0).toUpperCase() : "U"}
               </div>
               <div className="hidden md:block">
-                <p className="text-xs font-semibold text-slate-800 leading-tight">
+                <p className="text-xs font-semibold text-[#171A19] leading-tight">
                   {userName}
                 </p>
-                <p className="text-[10px] text-slate-400">{userPhone}</p>
+                <p className="text-[10px] text-[#707875]">{userPhone}</p>
               </div>
             </div>
 
             <button
               onClick={onLogout}
               title="Sign Out"
-              className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 transition-colors"
+              className="p-2 rounded-xl text-[#707875] hover:text-rose-600 hover:bg-rose-50 border border-[#E7EBE8] transition-colors"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -136,7 +136,7 @@ export function Header({
         ) : (
           <button
             onClick={onOpenAuth}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#07865B] hover:bg-[#066747] text-white text-xs font-bold transition-all shadow-sm shadow-[#07865B]/20"
           >
             <LogIn className="w-3.5 h-3.5" />
             <span>Sign In</span>

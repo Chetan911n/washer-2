@@ -79,11 +79,11 @@ export function UiDialog({
       // @ts-expect-error closedby is a modern HTML attribute supported in modern browsers
       closedby="any"
       aria-labelledby={title ? "dialog-title" : undefined}
-      className={`fixed inset-0 m-auto z-50 p-0 rounded-2xl bg-white shadow-2xl border border-slate-200 backdrop:bg-slate-900/60 backdrop:backdrop-blur-sm w-[92vw] ${maxWidth} overflow-hidden transition-all animate-in fade-in-0 zoom-in-95 duration-200`}
+      className={`fixed inset-0 m-auto z-50 p-0 rounded-3xl bg-white shadow-2xl border border-[#E7EBE8] backdrop:bg-[#171A19]/55 backdrop:backdrop-blur-sm w-[92vw] ${maxWidth} overflow-hidden transition-all animate-in fade-in-0 zoom-in-95 duration-200`}
     >
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-[#E7EBE8] bg-[#F7F8F7]">
         {title ? (
-          <h2 id="dialog-title" className="text-lg font-bold text-slate-800">
+          <h2 id="dialog-title" className="text-base sm:text-lg font-black text-[#171A19] tracking-tight">
             {title}
           </h2>
         ) : (
@@ -93,7 +93,7 @@ export function UiDialog({
           type="button"
           onClick={onClose}
           aria-label="Close dialog"
-          className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          className="p-1.5 rounded-full text-[#707875] hover:text-[#171A19] hover:bg-[#E7EBE8] transition-colors"
         >
           <X className="w-5 h-5" />
         </button>

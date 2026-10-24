@@ -3,19 +3,42 @@
 @tailwind utilities;
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #F7F8F7;
+  --foreground: #171A19;
+  --card: #FFFFFF;
+  --primary: #07865B;
+  --primary-dark: #066747;
+  --text-muted: #707875;
+  --border: #E7EBE8;
+  --success-bg: #E8F7EF;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom backdrop blur dialog styling */
 dialog::backdrop {
-  background-color: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(4px);
+  background-color: rgba(15, 23, 20, 0.55);
+  backdrop-filter: blur(6px);
+}
+
+/* Smooth custom scrollbars for mobile feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #E7EBE8;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
 }

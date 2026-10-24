@@ -86,16 +86,16 @@ export function ReviewPage({
   if (isSubmitted) {
     return (
       <div className="max-w-md mx-auto py-12 px-4 text-center space-y-4">
-        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-inner animate-bounce">
+        <div className="w-16 h-16 bg-[#E8F7EF] text-[#07865B] rounded-full flex items-center justify-center mx-auto shadow-inner animate-bounce">
           <CheckCircle2 className="w-10 h-10" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900">
+        <h2 className="text-2xl font-black text-[#171A19]">
           Review Submitted!
         </h2>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-[#707875]">
           Thank you for rating {booking.washer?.name || "Rajesh Kumar"}. Your feedback helps our doorstep team maintain 5-star quality.
         </p>
-        <p className="text-xs text-slate-400">Returning to dashboard...</p>
+        <p className="text-xs text-[#707875]">Returning to dashboard...</p>
       </div>
     );
   }
@@ -106,29 +106,29 @@ export function ReviewPage({
       <button
         type="button"
         onClick={onBack}
-        className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition-colors"
+        className="text-xs font-bold text-[#707875] hover:text-[#171A19] flex items-center gap-1.5 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>Back to Dashboard</span>
       </button>
 
       {/* Hero Success Card */}
-      <div className="bg-gradient-to-br from-green-600 to-emerald-800 text-white p-5 rounded-3xl shadow-lg space-y-2 text-center">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold">
-          <CheckCircle2 className="w-3.5 h-3.5 text-green-200" />
+      <div className="bg-gradient-to-br from-[#07865B] via-[#066747] to-[#04412E] text-white p-6 rounded-3xl shadow-card space-y-2 text-center">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-[#E8F7EF]">
+          <CheckCircle2 className="w-3.5 h-3.5 text-[#E8F7EF]" />
           <span>Payment Verified • UPI Successful</span>
         </div>
         <h1 className="text-2xl font-black tracking-tight">
           How was your car wash?
         </h1>
-        <p className="text-xs text-green-100">
+        <p className="text-xs text-[#E8F7EF]">
           Booking {booking.bookingCode} • Cleaned {booking.cars.map((c) => c.name).join(", ")}
         </p>
       </div>
 
       {/* Washer Partner Profile */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center gap-3">
-        <div className="w-14 h-14 rounded-2xl bg-blue-100 overflow-hidden border-2 border-blue-500 shrink-0">
+      <div className="bg-white rounded-3xl border border-[#E7EBE8] p-4 shadow-card flex items-center gap-3.5">
+        <div className="w-14 h-14 rounded-2xl bg-[#E8F7EF] overflow-hidden border-2 border-[#07865B] shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={
@@ -141,7 +141,7 @@ export function ReviewPage({
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between">
-            <h3 className="font-extrabold text-slate-900 text-sm">
+            <h3 className="font-extrabold text-[#171A19] text-sm">
               {booking.washer?.name || "Rajesh Kumar"}
             </h3>
             <span className="text-[11px] font-bold text-amber-500 flex items-center gap-1">
@@ -149,28 +149,28 @@ export function ReviewPage({
               4.92 Rating
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-[#707875] mt-0.5">
             Your Doorstep Car Care Professional
           </p>
-          <div className="flex items-center gap-1.5 text-[10px] text-green-600 font-semibold mt-1">
-            <ShieldCheck className="w-3 h-3" />
+          <div className="flex items-center gap-1.5 text-[10px] text-[#07865B] font-bold mt-1">
+            <ShieldCheck className="w-3.5 h-3.5" />
             <span>Insurance Before & After Photos Submitted</span>
           </div>
         </div>
       </div>
 
-      {/* After Photos Gallery Preview (if any) */}
+      {/* After Photos Gallery Preview */}
       {booking.afterPhotos.length > 0 && (
-        <div className="bg-slate-100 p-3 rounded-2xl">
-          <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+        <div className="bg-[#F7F8F7] border border-[#E7EBE8] p-3.5 rounded-3xl">
+          <p className="text-[11px] font-bold text-[#171A19] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-[#07865B]" />
             Clean Photos Captured by Washer ({booking.afterPhotos.length})
           </p>
           <div className="grid grid-cols-3 gap-2">
             {booking.afterPhotos.slice(0, 3).map((p) => (
               <div
                 key={p.id}
-                className="aspect-video rounded-xl overflow-hidden bg-black relative"
+                className="aspect-video rounded-2xl overflow-hidden bg-black relative"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -188,10 +188,10 @@ export function ReviewPage({
       )}
 
       {/* Review Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-[#E7EBE8] p-5 shadow-card space-y-4">
         {/* Star Rating */}
         <div className="text-center py-2">
-          <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-bold text-[#707875] uppercase tracking-wider mb-2">
             Tap Stars to Rate
           </label>
           <div className="flex items-center justify-center gap-2">
@@ -227,8 +227,8 @@ export function ReviewPage({
 
         {/* Compliment Tags */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-            <ThumbsUp className="w-3.5 h-3.5 text-blue-600" />
+          <label className="block text-xs font-bold text-[#171A19] mb-1.5 flex items-center gap-1.5">
+            <ThumbsUp className="w-3.5 h-3.5 text-[#07865B]" />
             What impressed you the most?
           </label>
           <div className="flex flex-wrap gap-1.5">
@@ -241,8 +241,8 @@ export function ReviewPage({
                   onClick={() => toggleTag(tag)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
                     selected
-                      ? "bg-blue-50 border-blue-600 text-blue-700 ring-1 ring-blue-600 shadow-sm"
-                      : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                      ? "bg-[#E8F7EF] border-[#07865B] text-[#066747] ring-1 ring-[#07865B] shadow-2xs"
+                      : "bg-white border-[#E7EBE8] text-[#707875] hover:border-slate-300"
                   }`}
                 >
                   {tag}
@@ -254,7 +254,7 @@ export function ReviewPage({
 
         {/* Comment */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
+          <label className="block text-xs font-bold text-[#171A19] mb-1">
             Write Feedback for Washer
           </label>
           <textarea
@@ -262,13 +262,13 @@ export function ReviewPage({
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Washed right at my parking slot, zero scratches, glass and tyres look brand new!"
-            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 text-xs rounded-xl border border-[#E7EBE8] focus:border-[#07865B] focus:ring-1 focus:ring-[#07865B] outline-none"
           />
         </div>
 
         {/* Optional Tip */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+          <label className="block text-xs font-bold text-[#171A19] mb-1.5">
             Add a Tip for {booking.washer?.name || "Washer"} (Optional)
           </label>
           <div className="flex items-center gap-2">
@@ -279,8 +279,8 @@ export function ReviewPage({
                 onClick={() => setTip(amt)}
                 className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
                   tip === amt
-                    ? "bg-green-50 border-green-600 text-green-700 ring-1 ring-green-600 shadow-sm"
-                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "bg-[#E8F7EF] border-[#07865B] text-[#066747] ring-1 ring-[#07865B] shadow-2xs"
+                    : "bg-white border-[#E7EBE8] text-[#707875] hover:bg-[#F7F8F7]"
                 }`}
               >
                 {amt === 0 ? "No Tip" : `₹${amt}`}
@@ -292,7 +292,7 @@ export function ReviewPage({
         {/* Submit */}
         <button
           type="submit"
-          className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl text-sm transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 hover:scale-[1.01]"
+          className="w-full py-3.5 bg-[#07865B] hover:bg-[#066747] text-white font-extrabold rounded-2xl text-sm transition-all shadow-md shadow-[#07865B]/25 flex items-center justify-center gap-2 hover:scale-[1.01]"
         >
           <Send className="w-4 h-4" />
           <span>Submit Review & Complete</span>
