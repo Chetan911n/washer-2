@@ -2,16 +2,15 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "App Washer — Doorstep Multi-Car Wash & Partner Hub",
+  title: "AppWasher",
   description:
-    "Doorstep car wash booking with multi-car slots, insurance before-photos, WhatsApp delivery, automated UPI payments, station head dispatch, and washer reviews.",
+    "Professional doorstep car wash, with photo proof at every step.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -21,9 +20,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-[#F7F8F7] text-[#171A19] antialiased selection:bg-[#07865B] selection:text-white">
-        {children}
-      </body>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }
