@@ -1,11 +1,28 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  fetchUserBookings,
+  fetchUserCars,
+  fetchUserParkingSpot,
+  createBookingRpc,
+  assignWasherRpc,
+  startWashRpc,
+  completeJobRpc,
+  recordCashPaymentRpc,
+  cancelBookingRpc,
+  submitReviewRpc,
+  settlePlatformFeeRpc,
+  uploadBookingPhoto,
+  subscribeToRealtimeBookings,
+  DBBooking,
+} from "@/lib/supabaseStore";
+import { SEEDED_DEV_USERS } from "@/lib/auth/constants";
 
 const K = "appwasher_v2";
 
 interface CarItem {
-  id: number;
+  id: string | number;
   name: string;
   type: string;
   plate: string;
@@ -20,7 +37,7 @@ interface BookingItem {
   addr: string;
   spot: string;
   total: number;
-  st: "Pending" | "Assigned" | "Washing" | "Awaiting Payment" | "Paid";
+  st: "Pending" | "Assigned" | "Washing" | "Awaiting Payment" | "Paid" | "Cancelled";
   w: string | null;
   bf: number[]; // 5 items
   af: number[]; // 4 items
@@ -33,10 +50,13 @@ interface AppState {
   cars: CarItem[];
   addr: string;
   spot: string;
+  spotId?: string;
   bk: BookingItem[];
   n: number;
   settled: number;
   name: string;
+  phone?: string;
+  userId?: string;
 }
 
 const PK = [
@@ -48,11 +68,50 @@ const PK = [
 const WS = ["Rajesh Kumar", "Suresh Verma", "Imran Khan"];
 const SL = ["06:30 AM", "08:30 AM", "03:00 PM", "05:00 PM"];
 
-const CR: Record<string, [string, string]> = {
-  customer: ["chetan", "demo123"],
-  station: ["station", "station123"],
-  washer: ["rajesh", "washer123"],
+const SLOT_MAP: Record<string, string> = {
+  "06:30 AM": "06:30",
+  "08:30 AM": "08:30",
+  "03:00 PM": "15:00",
+  "05:00 PM": "17:00",
+  "06:30": "06:30",
+  "08:30": "08:30",
+  "15:00": "15:00",
+  "17:00": "17:00",
 };
+
+const SLOT_DISPLAY_MAP: Record<string, string> = {
+  "06:30": "06:30 AM",
+  "08:30": "08:30 AM",
+  "15:00": "03:00 PM",
+  "17:00": "05:00 PM",
+};
+
+const WASHER_ID_MAP: Record<string, string> = {
+  "Rajesh Kumar": "00000000-0000-0000-0000-000000000003",
+  "Suresh Verma": "00000000-0000-0000-0000-000000000004",
+  "Imran Khan": "00000000-0000-0000-0000-000000000005",
+};
+
+const WASHER_NAME_MAP: Record<string, string> = {
+  "00000000-0000-0000-0000-000000000003": "Rajesh Kumar",
+  "00000000-0000-0000-0000-000000000004": "Suresh Verma",
+  "00000000-0000-0000-0000-000000000005": "Imran Khan",
+};
+
+const BEFORE_POSITIONS: ("front" | "rear" | "left" | "right" | "existing_damage")[] = [
+  "front",
+  "rear",
+  "left",
+  "right",
+  "existing_damage",
+];
+
+const AFTER_POSITIONS: ("front" | "rear" | "left" | "right")[] = [
+  "front",
+  "rear",
+  "left",
+  "right",
+];
 
 const RN: Record<string, string> = {
   customer: "Customer",
@@ -65,15 +124,16 @@ const CAR_TYPES = ["Hatchback", "Sedan", "SUV"];
 const seed: AppState = {
   role: null,
   cars: [
-    { id: 1, name: "Hyundai Creta", type: "SUV", plate: "MH12AB1234" },
-    { id: 2, name: "Maruti Swift", type: "Hatchback", plate: "MH12CD5678" },
+    { id: "car_chetan_sedan", name: "Honda City", type: "Sedan", plate: "MH 12 AB 1234" },
+    { id: "car_chetan_suv", name: "Hyundai Creta", type: "SUV", plate: "MH 12 CD 5678" },
   ],
-  addr: "Skyline Society, Hinjewadi Phase 1, Pune",
-  spot: "Basement 2, Pillar 45",
+  addr: "Blue Ridge Tower B, Hinjewadi Phase 1, Pune",
+  spot: "Basement B2, Spot #42",
+  spotId: "spot_chetan_home",
   bk: [],
   n: 1,
   settled: 0,
-  name: "Chetan",
+  name: "Chetan Sharma",
 };
 
 const dn: Record<string, number> = {
@@ -136,20 +196,37 @@ function QrSvg() {
   );
 }
 
+function toIsoDate(dStr: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) return dStr;
+  const d = new Date(dStr);
+  if (!isNaN(d.getTime())) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  const tom = new Date();
+  tom.setDate(tom.getDate() + 1);
+  return tom.toISOString().split("T")[0];
+}
+
 export default function Home() {
   const [S, setS] = useState<AppState>(seed);
   const [mounted, setMounted] = useState(false);
 
-  // Auth UI state
+  // Auth & OTP state
   const [authRole, setAuthRole] = useState<"customer" | "station" | "washer">("customer");
-  const [authReg, setAuthReg] = useState(false);
-  const [authU, setAuthU] = useState("chetan");
-  const [authP, setAuthP] = useState("demo123");
-  const [authCarName, setAuthCarName] = useState("");
-  const [authCarType, setAuthCarType] = useState("Hatchback");
-  const [authPlate, setAuthPlate] = useState("");
-  const [authSpot, setAuthSpot] = useState("");
+  const [authPhone, setAuthPhone] = useState("+910000000001");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpStep, setOtpStep] = useState<"phone" | "code">("phone");
   const [authErr, setAuthErr] = useState("");
+  const [authSuccessMsg, setAuthSuccessMsg] = useState("");
+  const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const [expiryRemaining, setExpiryRemaining] = useState(300);
+  const [maskedPhoneDisplay, setMaskedPhoneDisplay] = useState("");
+  const [devModeActive, setDevModeActive] = useState(true);
+  const [devCodeAvailable, setDevCodeAvailable] = useState<string | undefined>("123456");
 
   // Washer tab
   const [washerTab, setWasherTab] = useState<"today" | "done">("today");
@@ -162,23 +239,125 @@ export default function Home() {
   // Modal State
   const [M, setM] = useState<{
     type?: "book" | "pay" | "rv" | "done";
-    // booking modal
     s?: number; // 1 to 5
-    cars?: number[];
+    cars?: (string | number)[];
     pkg?: string;
     d?: string;
     ds?: string[];
     sl?: string;
     addr?: string;
     spot?: string;
-    // pay modal
     payId?: string;
-    // review modal
     rvId?: string;
     r?: number;
     tags?: string[];
     tip?: number;
   } | null>(null);
+
+  // Fetch auth config on mount
+  useEffect(() => {
+    fetch("/api/auth/config")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setDevModeActive(Boolean(data.devMode));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Cooldown & Expiry Timers
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
+    const interval = setInterval(() => {
+      setCooldownRemaining((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldownRemaining]);
+
+  useEffect(() => {
+    if (otpStep !== "code" || expiryRemaining <= 0) return;
+    const interval = setInterval(() => {
+      setExpiryRemaining((prev) => {
+        if (prev <= 1) {
+          setAuthErr("OTP has expired. Please request a new code.");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [otpStep, expiryRemaining]);
+
+  // Map DB Booking to Client Booking
+  const mapDbBookingToClient = (b: DBBooking): BookingItem => {
+    const stMap: Record<string, BookingItem["st"]> = {
+      pending: "Pending",
+      assigned: "Assigned",
+      washing: "Washing",
+      awaiting_payment: "Awaiting Payment",
+      paid: "Paid",
+      cancelled: "Cancelled",
+    };
+
+    // Calculate before photos [front, rear, left, right, damage]
+    const bf = [0, 0, 0, 0, 0];
+    const af = [0, 0, 0, 0];
+
+    (b.photos || []).forEach((p) => {
+      if (p.kind === "before") {
+        const idx = BEFORE_POSITIONS.indexOf(p.position as any);
+        if (idx >= 0) bf[idx] = 1;
+      } else if (p.kind === "after") {
+        const idx = AFTER_POSITIONS.indexOf(p.position as any);
+        if (idx >= 0) af[idx] = 1;
+      }
+    });
+
+    return {
+      id: b.id,
+      cars: (b.cars || []).map((c) => ({
+        id: c.id,
+        name: c.name,
+        type: c.type.charAt(0).toUpperCase() + c.type.slice(1),
+        plate: c.plate,
+      })),
+      pkg: b.package_id,
+      d: b.scheduled_date,
+      sl: SLOT_DISPLAY_MAP[b.slot_start] || b.slot_start,
+      addr: b.address || "Hinjewadi, Pune",
+      spot: b.spot_label || "Spot #1",
+      total: b.total_inr,
+      st: stMap[b.status] || "Pending",
+      w: b.washer_id ? WASHER_NAME_MAP[b.washer_id] || "Assigned Washer" : null,
+      bf,
+      af,
+      pay: b.payment_method ? (b.payment_method === "cash" ? "Cash" : "UPI") : null,
+      rv: null,
+    };
+  };
+
+  // Sync state from Supabase
+  const refreshFromSupabase = async (userId: string, role: string, stationId?: string | null) => {
+    try {
+      const [dbCars, dbSpot, dbBookings] = await Promise.all([
+        fetchUserCars(userId),
+        fetchUserParkingSpot(userId),
+        fetchUserBookings(userId, role === "station" ? "station_head" : role, stationId || "green_valley"),
+      ]);
+
+      setS((prev) => ({
+        ...prev,
+        cars: dbCars.length ? dbCars : prev.cars,
+        addr: dbSpot?.address || prev.addr,
+        spot: dbSpot?.spot_label || prev.spot,
+        spotId: dbSpot?.id || prev.spotId,
+        bk: dbBookings.map(mapDbBookingToClient),
+      }));
+    } catch (e) {
+      console.warn("refreshFromSupabase error:", e);
+    }
+  };
 
   // Initialize and listen to storage
   useEffect(() => {
@@ -189,22 +368,18 @@ export default function Home() {
       } else {
         localStorage.setItem(K, JSON.stringify(seed));
       }
-    } catch {
-      // fallback
-    }
+    } catch {}
     setMounted(true);
-
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === K && e.newValue) {
-        try {
-          setS(JSON.parse(e.newValue));
-        } catch {}
-      }
-    };
-
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
   }, []);
+
+  // Realtime subscription when user is authenticated
+  useEffect(() => {
+    if (!S.userId || !S.role) return;
+    const unsub = subscribeToRealtimeBookings(() => {
+      refreshFromSupabase(S.userId!, S.role!, "green_valley");
+    });
+    return () => unsub();
+  }, [S.userId, S.role]);
 
   const updateState = (updater: (prev: AppState) => AppState) => {
     setS((prev) => {
@@ -216,98 +391,186 @@ export default function Home() {
     });
   };
 
-  // Auth handlers
+  // Role Tab Switching
   const handleRoleTabChange = (r: "customer" | "station" | "washer") => {
     setAuthRole(r);
     setAuthErr("");
-    const c = CR[r];
-    setAuthU(authReg && r === "customer" ? "" : c[0]);
-    setAuthP(authReg && r === "customer" ? "" : c[1]);
+    setAuthSuccessMsg("");
+    setOtpStep("phone");
+    if (r === "customer") setAuthPhone("+910000000001");
+    else if (r === "station") setAuthPhone("+910000000002");
+    else if (r === "washer") setAuthPhone("+910000000003");
   };
 
-  const handleRegToggle = (reg: boolean) => {
-    setAuthReg(reg);
-    setAuthErr("");
-    const c = CR["customer"];
-    setAuthU(reg ? "" : c[0]);
-    setAuthP(reg ? "" : c[1]);
-  };
-
-  const handleLogin = (demo: boolean) => {
-    const r = authRole;
-    const c = CR[r];
-    let u = authU.trim().toLowerCase();
-    let p = authP;
-
-    if (demo) {
-      u = c[0];
-      p = c[1];
+  // Send OTP
+  const handleSendOtp = async (targetPhone?: string) => {
+    const phoneToSend = (targetPhone || authPhone).trim();
+    if (!phoneToSend) {
+      setAuthErr("Please enter a phone number.");
+      return;
     }
 
-    if (authReg && r === "customer" && !demo) {
-      if (!u || !p) {
-        setAuthErr("Enter a username and password");
+    setIsSubmittingAuth(true);
+    setAuthErr("");
+    setAuthSuccessMsg("");
+
+    try {
+      const res = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneToSend }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setAuthErr(data.message || "Failed to send OTP.");
+        setIsSubmittingAuth(false);
         return;
       }
-      updateState((prev) => {
-        const nextCars = [...prev.cars];
-        if (authCarName.trim()) {
-          nextCars.push({
-            id: Date.now(),
-            name: authCarName.trim(),
-            type: authCarType,
-            plate: authPlate.trim() || "-",
-          });
-        }
-        return {
-          ...prev,
-          role: r,
-          cars: nextCars,
-          spot: authSpot.trim() || prev.spot,
-          name: u.charAt(0).toUpperCase() + u.slice(1),
-        };
+
+      setMaskedPhoneDisplay(data.maskedPhone || phoneToSend);
+      setCooldownRemaining(data.cooldownSeconds || 30);
+      setExpiryRemaining(300);
+      setDevCodeAvailable(data.devCode);
+      setOtpStep("code");
+      setAuthSuccessMsg(data.message || `Code sent to ${data.maskedPhone}`);
+    } catch (err: any) {
+      setAuthErr("Network error sending OTP. Please try again.");
+    } finally {
+      setIsSubmittingAuth(false);
+    }
+  };
+
+  // Verify OTP & Sign In
+  const handleVerifyOtp = async (customCode?: string) => {
+    const codeToVerify = (customCode || otpCode).trim();
+    if (!codeToVerify) {
+      setAuthErr("Please enter the 6-digit OTP code.");
+      return;
+    }
+
+    setIsSubmittingAuth(true);
+    setAuthErr("");
+
+    try {
+      const res = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: authPhone.trim(), code: codeToVerify }),
       });
-      return;
-    }
+      const data = await res.json();
 
-    if (u !== c[0] || p !== c[1]) {
-      setAuthErr("Incorrect credentials. Use the demo button.");
-      return;
-    }
+      if (!res.ok || !data.success) {
+        setAuthErr(data.error || "Incorrect code. Please try again.");
+        setIsSubmittingAuth(false);
+        return;
+      }
 
-    updateState((prev) => ({
-      ...prev,
-      role: r,
-    }));
+      const user = data.user;
+      const roleMapped =
+        user.role === "station_head" ? "station" : (user.role as "customer" | "station" | "washer");
+
+      updateState((prev) => ({
+        ...prev,
+        role: roleMapped,
+        userId: user.id,
+        name: user.name,
+        phone: user.phone,
+      }));
+
+      // Fetch fresh data from Supabase
+      refreshFromSupabase(user.id, roleMapped, user.stationId);
+    } catch (err: any) {
+      setAuthErr("Network error verifying code. Please try again.");
+    } finally {
+      setIsSubmittingAuth(false);
+    }
+  };
+
+  // Quick Demo One-Click Handler (Dev Mode Only)
+  const handleQuickDemo = async (role: "customer" | "station" | "washer") => {
+    if (!devModeActive) return;
+    const phoneMap = {
+      customer: "+910000000001",
+      station: "+910000000002",
+      washer: "+910000000003",
+    };
+    const targetPhone = phoneMap[role];
+    setAuthRole(role);
+    setAuthPhone(targetPhone);
+    setAuthErr("");
+
+    // Send dev OTP and immediately auto-verify with 123456
+    setIsSubmittingAuth(true);
+    try {
+      await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: targetPhone }),
+      });
+
+      const res = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: targetPhone, code: "123456" }),
+      });
+      const data = await res.json();
+
+      if (data.success && data.user) {
+        const u = data.user;
+        const roleMapped =
+          u.role === "station_head" ? "station" : (u.role as "customer" | "station" | "washer");
+
+        updateState((prev) => ({
+          ...prev,
+          role: roleMapped,
+          userId: u.id,
+          name: u.name,
+          phone: u.phone,
+        }));
+
+        refreshFromSupabase(u.id, roleMapped, u.stationId);
+      } else {
+        setAuthErr(data.error || "Demo login failed.");
+      }
+    } catch {
+      setAuthErr("Demo sign-in encountered an error.");
+    } finally {
+      setIsSubmittingAuth(false);
+    }
   };
 
   const handleLogout = () => {
     updateState((prev) => ({
       ...prev,
       role: null,
+      userId: undefined,
     }));
+    setOtpStep("phone");
+    setOtpCode("");
+    setAuthErr("");
+    setAuthSuccessMsg("");
   };
 
   // Car management
   const handleAddCar = () => {
     if (!newCarName.trim()) return;
+    const newCar = {
+      id: "car_" + Date.now(),
+      name: newCarName.trim(),
+      type: newCarType,
+      plate: newCarPlate.trim() || "-",
+    };
+
     updateState((prev) => ({
       ...prev,
-      cars: [
-        ...prev.cars,
-        {
-          id: Date.now(),
-          name: newCarName.trim(),
-          type: newCarType,
-          plate: newCarPlate.trim() || "-",
-        },
-      ],
+      cars: [...prev.cars, newCar],
     }));
     setNewCarName("");
     setNewCarPlate("");
   };
 
-  const handleDeleteCar = (id: number) => {
+  const handleDeleteCar = (id: string | number) => {
     updateState((prev) => ({
       ...prev,
       cars: prev.cars.filter((c) => c.id !== id),
@@ -325,7 +588,7 @@ export default function Home() {
     setM({
       type: "book",
       s: 1,
-      cars: [],
+      cars: S.cars.length ? [S.cars[0].id] : [],
       pkg: "ext",
       d: dates[0],
       ds: dates,
@@ -335,7 +598,7 @@ export default function Home() {
     });
   };
 
-  const toggleModalCar = (carId: number) => {
+  const toggleModalCar = (carId: string | number) => {
     if (!M || !M.cars) return;
     const a = [...M.cars];
     const idx = a.indexOf(carId);
@@ -350,9 +613,30 @@ export default function Home() {
     return M.cars.length * (pkgItem?.p || 499);
   };
 
-  const confirmBooking = () => {
-    if (!M || !M.cars) return;
+  const confirmBooking = async () => {
+    if (!M || !M.cars || !M.cars.length) return;
     const t = getBookingTotal();
+    const pkgItem = PK.find((p) => p.id === M.pkg) || PK[0];
+    const scheduledDateIso = toIsoDate(M.d || "");
+    const slotStartRaw = SLOT_MAP[M.sl || "08:30 AM"] || "08:30";
+
+    try {
+      // 1. Call Supabase RPC to enforce database validation & price snapshot
+      if (S.userId) {
+        await createBookingRpc({
+          carIds: M.cars.map(String),
+          packageId: pkgItem.id,
+          scheduledDate: scheduledDateIso,
+          slotStart: slotStartRaw,
+          parkingSpotId: S.spotId || "spot_chetan_home",
+          stationId: "green_valley",
+        });
+      }
+    } catch (e: any) {
+      console.warn("createBookingRpc fallback / notice:", e.message);
+    }
+
+    // Update client state & refresh
     const newBooking: BookingItem = {
       id: "AW" + (5245 + S.n),
       cars: M.cars.map((id) => S.cars.find((c) => c.id === id)!).filter(Boolean),
@@ -378,32 +662,60 @@ export default function Home() {
       spot: M.spot || prev.spot,
     }));
 
+    if (S.userId) {
+      refreshFromSupabase(S.userId, S.role || "customer", "green_valley");
+    }
+
     setM(null);
   };
 
   // Station Head Actions
-  const assignWasher = (bookingId: string, washer: string) => {
-    if (!washer) return;
+  const assignWasher = async (bookingId: string, washerName: string) => {
+    if (!washerName) return;
+    const washerId = WASHER_ID_MAP[washerName];
+
+    try {
+      if (washerId) {
+        await assignWasherRpc(bookingId, washerId);
+      }
+    } catch (err: any) {
+      alert(err.message || "Failed to assign washer in database.");
+      return;
+    }
+
     updateState((prev) => ({
       ...prev,
-      bk: prev.bk.map((b) => (b.id === bookingId ? { ...b, w: washer, st: "Assigned" } : b)),
+      bk: prev.bk.map((b) => (b.id === bookingId ? { ...b, w: washerName, st: "Assigned" } : b)),
     }));
   };
 
+  // Completed & Revenue Math
   const paidBookings = S.bk.filter((b) => b.st === "Paid");
-  const totalRevenue = paidBookings.reduce((acc, b) => acc + b.total, 0);
+  const totalRevenue = paidBookings.reduce((a, b) => a + b.total, 0);
   const platformFee = Math.round(totalRevenue * 0.2);
   const pendingPlatformFee = platformFee - S.settled;
 
-  const settlePlatformFee = () => {
+  const settlePlatformFee = async () => {
+    try {
+      await settlePlatformFeeRpc("green_valley");
+    } catch (e: any) {
+      console.warn("settlePlatformFeeRpc error:", e);
+    }
+
     updateState((prev) => ({
       ...prev,
       settled: platformFee,
     }));
   };
 
-  // Field Washer Actions
-  const togglePhoto = (bookingId: string, key: "bf" | "af", index: number) => {
+  // Photo Capture & Upload (Camera Support)
+  const handlePhotoUpload = async (
+    bookingId: string,
+    key: "bf" | "af",
+    index: number,
+    file?: File
+  ) => {
+    // 1. Update UI slot immediately
     updateState((prev) => ({
       ...prev,
       bk: prev.bk.map((b) => {
@@ -413,16 +725,45 @@ export default function Home() {
         return { ...b, [key]: arr };
       }),
     }));
+
+    // 2. If photo file is selected from camera, upload to Supabase Storage & database
+    if (file && S.userId) {
+      try {
+        const kind = key === "bf" ? "before" : "after";
+        const position =
+          key === "bf" ? BEFORE_POSITIONS[index] : AFTER_POSITIONS[index];
+        await uploadBookingPhoto(bookingId, kind, position, file, S.userId);
+      } catch (err: any) {
+        console.warn("Photo upload warning:", err.message);
+      }
+    }
   };
 
-  const updateBookingStatus = (bookingId: string, st: BookingItem["st"]) => {
+  const updateBookingStatus = async (bookingId: string, st: BookingItem["st"]) => {
+    try {
+      if (st === "Washing") {
+        await startWashRpc(bookingId);
+      } else if (st === "Awaiting Payment") {
+        await completeJobRpc(bookingId);
+      }
+    } catch (err: any) {
+      alert(err.message || `Failed to transition booking status to ${st}`);
+      return;
+    }
+
     updateState((prev) => ({
       ...prev,
       bk: prev.bk.map((b) => (b.id === bookingId ? { ...b, st } : b)),
     }));
   };
 
-  const markCashPaid = (bookingId: string) => {
+  const markCashPaid = async (bookingId: string) => {
+    try {
+      await recordCashPaymentRpc(bookingId);
+    } catch (err: any) {
+      console.warn("recordCashPaymentRpc notice:", err.message);
+    }
+
     updateState((prev) => ({
       ...prev,
       bk: prev.bk.map((b) => (b.id === bookingId ? { ...b, st: "Paid", pay: "Cash" } : b)),
@@ -437,8 +778,15 @@ export default function Home() {
     setM(null);
   };
 
-  const submitReview = () => {
+  const submitReview = async () => {
     if (!M || !M.rvId) return;
+
+    try {
+      await submitReviewRpc(M.rvId, M.r || 5, M.tags || [], M.tip || 0);
+    } catch (e: any) {
+      console.warn("submitReviewRpc notice:", e.message);
+    }
+
     updateState((prev) => ({
       ...prev,
       bk: prev.bk.map((b) =>
@@ -523,6 +871,21 @@ export default function Home() {
         <b>AppWasher</b>
       </div>
       <div className="r">
+        {devModeActive && (
+          <span
+            style={{
+              background: "#FEF3C7",
+              color: "#92400E",
+              padding: "2px 8px",
+              borderRadius: "6px",
+              fontSize: "11px",
+              fontWeight: 600,
+              border: "1px solid #FDE68A",
+            }}
+          >
+            DEV MODE
+          </span>
+        )}
         <span className="bd">{RN[S.role || "customer"]}</span>
         <span className="av">
           {S.role === "customer" ? S.name[0] : S.role === "station" ? "V" : "R"}
@@ -536,7 +899,7 @@ export default function Home() {
 
   return (
     <>
-      {/* 1. AUTH SCREEN */}
+      {/* 1. AUTH SCREEN (WHATSAPP OTP FLOW) */}
       {!S.role ? (
         <div className="auth">
           <div className="hero">
@@ -565,10 +928,31 @@ export default function Home() {
           </div>
 
           <div className="form">
-            <div className="cd">
-              <h1 style={{ fontSize: "24px" }}>Welcome back</h1>
-              <p className="mu">Choose your portal to continue</p>
+            <div className="cd" style={{ position: "relative" }}>
+              <div className="row" style={{ alignItems: "center", marginBottom: "4px" }}>
+                <h1 style={{ fontSize: "24px", margin: 0 }}>Welcome</h1>
+                {devModeActive && (
+                  <span
+                    style={{
+                      background: "#FEF3C7",
+                      color: "#92400E",
+                      padding: "3px 8px",
+                      borderRadius: "6px",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      border: "1px solid #FDE68A",
+                      letterSpacing: "0.02em",
+                    }}
+                  >
+                    DEV MODE
+                  </span>
+                )}
+              </div>
+              <p className="mu" style={{ margin: "0 0 16px" }}>
+                Sign in securely with WhatsApp OTP
+              </p>
 
+              {/* Portal Selector Tabs */}
               <div className="tabs">
                 {(["customer", "station", "washer"] as const).map((k) => (
                   <button
@@ -581,94 +965,171 @@ export default function Home() {
                 ))}
               </div>
 
-              {authRole === "customer" && (
-                <div className="tabs" style={{ marginTop: "12px" }}>
-                  <button
-                    className={!authReg ? "on" : ""}
-                    onClick={() => handleRegToggle(false)}
-                  >
-                    Sign in
-                  </button>
-                  <button
-                    className={authReg ? "on" : ""}
-                    onClick={() => handleRegToggle(true)}
-                  >
-                    Register
-                  </button>
-                </div>
-              )}
-
-              <label>Username</label>
-              <input
-                value={authU}
-                onChange={(e) => setAuthU(e.target.value)}
-                placeholder="Enter username"
-              />
-
-              <label>Password</label>
-              <input
-                type="password"
-                value={authP}
-                onChange={(e) => setAuthP(e.target.value)}
-                placeholder="Enter password"
-              />
-
-              {authReg && authRole === "customer" && (
+              {otpStep === "phone" ? (
                 <>
-                  <label>Your car</label>
+                  <label style={{ marginTop: "14px", display: "block" }}>
+                    WhatsApp Phone Number
+                  </label>
                   <input
-                    value={authCarName}
-                    onChange={(e) => setAuthCarName(e.target.value)}
-                    placeholder="e.g. Honda City"
+                    value={authPhone}
+                    onChange={(e) => setAuthPhone(e.target.value)}
+                    placeholder="+919876543210"
+                    disabled={isSubmittingAuth}
                   />
 
-                  <label>Car type</label>
-                  <select
-                    value={authCarType}
-                    onChange={(e) => setAuthCarType(e.target.value)}
+                  {devModeActive && (
+                    <div className="mu sm" style={{ margin: "6px 0 12px", fontSize: "12px" }}>
+                      Seeded dev phone: <b>{authPhone}</b>
+                    </div>
+                  )}
+
+                  {authSuccessMsg && (
+                    <div
+                      className="sm"
+                      style={{ color: "var(--g)", marginTop: "6px", fontWeight: 500 }}
+                    >
+                      {authSuccessMsg}
+                    </div>
+                  )}
+
+                  {authErr && (
+                    <div
+                      className="sm"
+                      style={{ color: "var(--rd)", minHeight: "18px", marginTop: "8px" }}
+                    >
+                      {authErr}
+                    </div>
+                  )}
+
+                  <button
+                    className="btn w"
+                    style={{ marginTop: "12px" }}
+                    disabled={isSubmittingAuth || cooldownRemaining > 0}
+                    onClick={() => handleSendOtp()}
                   >
-                    {CAR_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
+                    {isSubmittingAuth
+                      ? "Sending code..."
+                      : cooldownRemaining > 0
+                      ? `Resend in ${cooldownRemaining}s`
+                      : "Send WhatsApp OTP"}
+                  </button>
 
-                  <label>Plate number</label>
+                  {/* Quick Demo Buttons (Available in DEV MODE only) */}
+                  {devModeActive && (
+                    <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "1px solid var(--ln)" }}>
+                      <div className="mu sm" style={{ marginBottom: "8px", fontWeight: 600 }}>
+                        ⚡ Quick Demo (Dev Mode)
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <button
+                          className="btn o w s"
+                          onClick={() => handleQuickDemo("customer")}
+                          disabled={isSubmittingAuth}
+                        >
+                          Demo as Customer (Chetan)
+                        </button>
+                        <button
+                          className="btn o w s"
+                          onClick={() => handleQuickDemo("station")}
+                          disabled={isSubmittingAuth}
+                        >
+                          Demo as Station Head (Vikram)
+                        </button>
+                        <button
+                          className="btn o w s"
+                          onClick={() => handleQuickDemo("washer")}
+                          disabled={isSubmittingAuth}
+                        >
+                          Demo as Field Washer (Rajesh)
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      margin: "14px 0 10px",
+                      padding: "10px",
+                      background: "var(--bg)",
+                      borderRadius: "10px",
+                    }}
+                  >
+                    <div className="mu sm">Code sent to:</div>
+                    <b>{maskedPhoneDisplay}</b>
+                    <button
+                      className="btn o s"
+                      style={{ marginLeft: "8px", padding: "2px 8px", fontSize: "11px" }}
+                      onClick={() => {
+                        setOtpStep("phone");
+                        setAuthErr("");
+                      }}
+                    >
+                      Change
+                    </button>
+                  </div>
+
+                  <label style={{ display: "block" }}>Enter 6-digit Code</label>
                   <input
-                    value={authPlate}
-                    onChange={(e) => setAuthPlate(e.target.value)}
-                    placeholder="MH12XY0000"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    placeholder="123456"
+                    maxLength={6}
+                    disabled={isSubmittingAuth}
+                    autoFocus
+                    style={{ letterSpacing: "4px", fontSize: "18px", fontWeight: 600 }}
                   />
 
-                  <label>Parking spot</label>
-                  <input
-                    value={authSpot}
-                    onChange={(e) => setAuthSpot(e.target.value)}
-                    placeholder="Basement 2, Pillar 45"
-                  />
+                  <div className="row" style={{ marginTop: "6px", fontSize: "12px" }}>
+                    <span className="mu">
+                      Expires in: {Math.floor(expiryRemaining / 60)}:
+                      {String(expiryRemaining % 60).padStart(2, "0")}
+                    </span>
+                    {devModeActive && devCodeAvailable && (
+                      <button
+                        className="btn o s"
+                        style={{ padding: "2px 6px", fontSize: "11px" }}
+                        onClick={() => {
+                          setOtpCode(devCodeAvailable);
+                          handleVerifyOtp(devCodeAvailable);
+                        }}
+                      >
+                        Auto-fill ({devCodeAvailable})
+                      </button>
+                    )}
+                  </div>
+
+                  {authErr && (
+                    <div
+                      className="sm"
+                      style={{ color: "var(--rd)", minHeight: "18px", marginTop: "8px" }}
+                    >
+                      {authErr}
+                    </div>
+                  )}
+
+                  <button
+                    className="btn w"
+                    style={{ marginTop: "14px" }}
+                    disabled={isSubmittingAuth || !otpCode.trim()}
+                    onClick={() => handleVerifyOtp()}
+                  >
+                    {isSubmittingAuth ? "Verifying..." : "Verify & Sign In"}
+                  </button>
+
+                  <button
+                    className="btn o w"
+                    style={{ marginTop: "8px" }}
+                    disabled={isSubmittingAuth || cooldownRemaining > 0}
+                    onClick={() => handleSendOtp()}
+                  >
+                    {cooldownRemaining > 0
+                      ? `Resend available in ${cooldownRemaining}s`
+                      : "Resend Code"}
+                  </button>
                 </>
               )}
-
-              <div
-                id="er"
-                className="sm"
-                style={{ color: "var(--rd)", minHeight: "18px", marginTop: "8px" }}
-              >
-                {authErr}
-              </div>
-
-              <button className="btn w" onClick={() => handleLogin(false)}>
-                {authReg && authRole === "customer" ? "Create account" : "Sign in"}
-              </button>
-
-              <button
-                className="btn o w"
-                style={{ marginTop: "8px" }}
-                onClick={() => handleLogin(true)}
-              >
-                Quick demo ({CR[authRole][0]})
-              </button>
             </div>
           </div>
         </div>
@@ -961,13 +1422,13 @@ export default function Home() {
             </div>
           )}
 
-          {/* 4. FIELD WASHER PORTAL */}
+          {/* 4. FIELD WASHER PORTAL (WITH CAMERA PHOTO CAPTURE) */}
           {S.role === "washer" && (
             <div className="wrap ph">
               <h1 style={{ fontSize: "24px" }}>My jobs</h1>
               <div className="tabs" style={{ margin: "14px 0" }}>
                 {(["today", "done"] as const).map((t) => {
-                  const all = S.bk.filter((b) => b.w === "Rajesh Kumar");
+                  const all = S.bk.filter((b) => b.w === "Rajesh Kumar" || !b.w);
                   const count =
                     t === "today"
                       ? all.filter((b) => b.st !== "Paid").length
@@ -985,7 +1446,7 @@ export default function Home() {
               </div>
 
               {(() => {
-                const all = S.bk.filter((b) => b.w === "Rajesh Kumar");
+                const all = S.bk.filter((b) => b.w === "Rajesh Kumar" || !b.w);
                 const list = all.filter((b) =>
                   washerTab === "today" ? b.st !== "Paid" : b.st === "Paid"
                 );
@@ -1038,13 +1499,23 @@ export default function Home() {
                               "Right side",
                               "Existing damage",
                             ].map((label, idx) => (
-                              <div
+                              <label
                                 key={label}
                                 className={`pb ${b.bf[idx] ? "on" : ""}`}
-                                onClick={() => togglePhoto(b.id, "bf", idx)}
+                                style={{ cursor: "pointer" }}
                               >
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  capture="environment"
+                                  style={{ display: "none" }}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    handlePhotoUpload(b.id, "bf", idx, file);
+                                  }}
+                                />
                                 {b.bf[idx] ? "✓ " + label : "📷 " + label}
-                              </div>
+                              </label>
                             ))}
                           </div>
                           <button
@@ -1064,13 +1535,23 @@ export default function Home() {
                           <div className="ph4">
                             {["Front", "Rear", "Left side", "Right side"].map(
                               (label, idx) => (
-                                <div
+                                <label
                                   key={label}
                                   className={`pb ${b.af[idx] ? "on" : ""}`}
-                                  onClick={() => togglePhoto(b.id, "af", idx)}
+                                  style={{ cursor: "pointer" }}
                                 >
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    style={{ display: "none" }}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      handlePhotoUpload(b.id, "af", idx, file);
+                                    }}
+                                  />
                                   {b.af[idx] ? "✓ " + label : "📷 " + label}
-                                </div>
+                                </label>
                               )
                             )}
                           </div>
@@ -1098,16 +1579,7 @@ export default function Home() {
                           <button className="btn w" onClick={() => markCashPaid(b.id)}>
                             Cash collected
                           </button>
-                          <p className="mu sm" style={{ textAlign: "center" }}>
-                            Or the customer pays by UPI from their app.
-                          </p>
                         </>
-                      )}
-
-                      {b.st === "Paid" && (
-                        <div className="mu sm">
-                          Paid by {b.pay}. Photos sent to the customer.
-                        </div>
                       )}
                     </div>
                   );
@@ -1248,94 +1720,115 @@ export default function Home() {
                   "Package",
                   "Date and time",
                   "Location",
-                  "Review",
+                  "Review and pay",
                 ];
-                const total = getBookingTotal();
-                const ok =
-                  s === 1
-                    ? (M.cars || []).length > 0
-                    : s === 4
-                    ? Boolean(M.addr?.trim() && M.spot?.trim())
-                    : true;
 
                 return (
                   <div>
-                    <div className="stp">
-                      {T.map((_, i) => (
-                        <i key={i} className={i < s ? "on" : ""} />
-                      ))}
-                    </div>
-
                     <div className="row">
-                      <h2>{T[s - 1]}</h2>
-                      <span className="mu sm">Step {s} of 5</span>
+                      <h2>
+                        Step {s} of 5 · {T[s - 1]}
+                      </h2>
+                      <button className="btn o s" onClick={() => setM(null)}>
+                        Cancel
+                      </button>
                     </div>
 
                     {/* Step 1: Cars */}
                     {s === 1 && (
                       <div>
-                        {S.cars.length ? (
-                          S.cars.map((c) => {
-                            const isSelected = (M.cars || []).includes(c.id);
-                            return (
-                              <div
-                                key={c.id}
-                                className={`sel ${isSelected ? "on" : ""}`}
-                                onClick={() => toggleModalCar(c.id)}
-                              >
-                                <div className="row" style={{ gap: "12px" }}>
-                                  <div className="ci">{carSvg}</div>
-                                  <div>
-                                    <b>{c.name}</b>
-                                    <div className="mu sm">
-                                      {c.type} · {c.plate}
-                                    </div>
+                        <p className="mu">Select vehicles for this wash</p>
+                        {S.cars.map((c) => {
+                          const isSel = (M.cars || []).includes(c.id);
+                          return (
+                            <div
+                              key={c.id}
+                              className={`cd row ${isSel ? "promo" : ""}`}
+                              style={{
+                                cursor: "pointer",
+                                margin: "8px 0",
+                                border: isSel ? "1.5px solid var(--g)" : undefined,
+                              }}
+                              onClick={() => toggleModalCar(c.id)}
+                            >
+                              <div className="row" style={{ gap: "10px" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={isSel}
+                                  readOnly
+                                  style={{ width: "18px", height: "18px" }}
+                                />
+                                <div>
+                                  <b>{c.name}</b>
+                                  <div className="mu sm">
+                                    {c.type} · {c.plate}
                                   </div>
                                 </div>
-                                <span>{isSelected ? "✓" : ""}</span>
                               </div>
-                            );
-                          })
-                        ) : (
-                          <div className="em">Add a car in My garage first.</div>
-                        )}
+                            </div>
+                          );
+                        })}
+                        <button
+                          className="btn w"
+                          style={{ marginTop: "14px" }}
+                          disabled={!M.cars || !M.cars.length}
+                          onClick={() => setM({ ...M, s: 2 })}
+                        >
+                          Next: Choose package
+                        </button>
                       </div>
                     )}
 
                     {/* Step 2: Package */}
                     {s === 2 && (
                       <div>
-                        {PK.map((x) => (
-                          <div
-                            key={x.id}
-                            className={`sel ${M.pkg === x.id ? "on" : ""}`}
-                            onClick={() => setM({ ...M, pkg: x.id })}
-                          >
-                            <div>
-                              <b>{x.n}</b>
-                              <div className="mu sm">{x.d}</div>
+                        <p className="mu">Choose a service package</p>
+                        {PK.map((p) => {
+                          const isSel = M.pkg === p.id;
+                          return (
+                            <div
+                              key={p.id}
+                              className={`cd ${isSel ? "promo" : ""}`}
+                              style={{
+                                cursor: "pointer",
+                                margin: "10px 0",
+                                border: isSel ? "1.5px solid var(--g)" : undefined,
+                              }}
+                              onClick={() => setM({ ...M, pkg: p.id })}
+                            >
+                              <div className="row">
+                                <b>{p.n}</b>
+                                <b>{R(p.p)}</b>
+                              </div>
+                              <p className="mu sm" style={{ margin: "4px 0 0" }}>
+                                {p.d}
+                              </p>
                             </div>
-                            <b>
-                              {R(x.p)}
-                              <span className="mu sm">/car</span>
-                            </b>
-                          </div>
-                        ))}
+                          );
+                        })}
+                        <div className="row" style={{ marginTop: "14px" }}>
+                          <button className="btn o" onClick={() => setM({ ...M, s: 1 })}>
+                            Back
+                          </button>
+                          <button className="btn" onClick={() => setM({ ...M, s: 3 })}>
+                            Next: Date & time
+                          </button>
+                        </div>
                       </div>
                     )}
 
-                    {/* Step 3: Date and time */}
+                    {/* Step 3: Date & Time */}
                     {s === 3 && (
                       <div>
                         <label>Date</label>
                         <div className="chips">
-                          {(M.ds || []).map((d) => (
+                          {(M.ds || []).map((date) => (
                             <span
-                              key={d}
-                              className={`chip ${M.d === d ? "on" : ""}`}
-                              onClick={() => setM({ ...M, d })}
+                              key={date}
+                              className={`chip ${M.d === date ? "on" : ""}`}
+                              onClick={() => setM({ ...M, d: date })}
                             >
-                              {d}
+                              {date}
                             </span>
                           ))}
                         </div>
@@ -1352,82 +1845,113 @@ export default function Home() {
                             </span>
                           ))}
                         </div>
+
+                        <div className="row" style={{ marginTop: "16px" }}>
+                          <button className="btn o" onClick={() => setM({ ...M, s: 2 })}>
+                            Back
+                          </button>
+                          <button className="btn" onClick={() => setM({ ...M, s: 4 })}>
+                            Next: Location
+                          </button>
+                        </div>
                       </div>
                     )}
 
                     {/* Step 4: Location */}
                     {s === 4 && (
                       <div>
-                        <label>Service address</label>
+                        <label>Society or Building address</label>
                         <input
                           value={M.addr || ""}
                           onChange={(e) => setM({ ...M, addr: e.target.value })}
+                          placeholder="e.g. Skyline Society, Hinjewadi Phase 1, Pune"
                         />
 
                         <label>Exact parking spot</label>
                         <input
                           value={M.spot || ""}
                           onChange={(e) => setM({ ...M, spot: e.target.value })}
+                          placeholder="e.g. Basement 2, Pillar 45"
                         />
+
+                        <div className="row" style={{ marginTop: "16px" }}>
+                          <button className="btn o" onClick={() => setM({ ...M, s: 3 })}>
+                            Back
+                          </button>
+                          <button
+                            className="btn"
+                            disabled={!M.addr?.trim() || !M.spot?.trim()}
+                            onClick={() => setM({ ...M, s: 5 })}
+                          >
+                            Next: Review
+                          </button>
+                        </div>
                       </div>
                     )}
 
                     {/* Step 5: Review & Confirm */}
                     {s === 5 && (
                       <div>
-                        <div className="cd" style={{ boxShadow: "none" }}>
+                        <div
+                          style={{
+                            background: "var(--bg)",
+                            padding: "14px",
+                            borderRadius: "14px",
+                            margin: "10px 0 16px",
+                          }}
+                        >
                           <div className="row">
-                            <span className="mu">
-                              {(M.cars || []).length} car
-                              {(M.cars || []).length > 1 ? "s" : ""} · {pkgItem.n}
-                            </span>
-                            <span>
-                              {R(pkgItem.p)} × {(M.cars || []).length}
-                            </span>
+                            <span className="mu">Package</span>
+                            <b>{pkgItem.n}</b>
                           </div>
-                          <div className="mu sm" style={{ margin: "6px 0" }}>
-                            {M.d}, {M.sl}
-                            <br />
-                            {M.spot}, {M.addr}
+                          <div className="row" style={{ margin: "8px 0" }}>
+                            <span className="mu">Vehicles</span>
+                            <b>
+                              {(M.cars || [])
+                                .map((id) => S.cars.find((c) => c.id === id)?.name)
+                                .filter(Boolean)
+                                .join(", ")}
+                            </b>
                           </div>
-                          <hr style={{ border: 0, borderTop: "1px solid var(--ln)" }} />
-                          <div className="row">
-                            <b>Total amount</b>
-                            <span className="mt">{R(total)}</span>
+                          <div className="row" style={{ margin: "8px 0" }}>
+                            <span className="mu">Slot</span>
+                            <b>
+                              {M.d}, {M.sl}
+                            </b>
                           </div>
+                          <div className="row" style={{ margin: "8px 0" }}>
+                            <span className="mu">Location</span>
+                            <b>{M.spot}</b>
+                          </div>
+                          <div
+                            className="row"
+                            style={{
+                              borderTop: "1px solid var(--ln)",
+                              paddingTop: "8px",
+                              marginTop: "8px",
+                            }}
+                          >
+                            <b>Total price</b>
+                            <b style={{ fontSize: "18px", color: "var(--g)" }}>
+                              {R(getBookingTotal())}
+                            </b>
+                          </div>
+                        </div>
+
+                        <p className="mu sm">
+                          Pay by cash or UPI after the wash is completed and photo verified.
+                        </p>
+
+                        <div className="row" style={{ marginTop: "14px" }}>
+                          <button className="btn o" onClick={() => setM({ ...M, s: 4 })}>
+                            Back
+                          </button>
+                          <button className="btn" onClick={confirmBooking}>
+                            Confirm booking · {R(getBookingTotal())}
+                          </button>
                         </div>
                       </div>
                     )}
-
-                    {/* Modal navigation buttons */}
-                    <div className="row" style={{ marginTop: "18px" }}>
-                      {s > 1 ? (
-                        <button
-                          className="btn o"
-                          onClick={() => setM({ ...M, s: s - 1 })}
-                        >
-                          Back
-                        </button>
-                      ) : (
-                        <button className="btn o" onClick={() => setM(null)}>
-                          Cancel
-                        </button>
-                      )}
-
-                      {s < 5 ? (
-                        <button
-                          className="btn"
-                          disabled={!ok}
-                          onClick={() => setM({ ...M, s: s + 1 })}
-                        >
-                          Next
-                        </button>
-                      ) : (
-                        <button className="btn" onClick={confirmBooking}>
-                          Confirm and book · {R(total)}
-                        </button>
-                      )}
-                    </div>
                   </div>
                 );
               })()
