@@ -60,6 +60,8 @@ const RN: Record<string, string> = {
   washer: "Field Washer",
 };
 
+const CAR_TYPES = ["Hatchback", "Sedan", "SUV"];
+
 const seed: AppState = {
   role: null,
   cars: [
@@ -144,6 +146,7 @@ export default function Home() {
   const [authU, setAuthU] = useState("chetan");
   const [authP, setAuthP] = useState("demo123");
   const [authCarName, setAuthCarName] = useState("");
+  const [authCarType, setAuthCarType] = useState("Hatchback");
   const [authPlate, setAuthPlate] = useState("");
   const [authSpot, setAuthSpot] = useState("");
   const [authErr, setAuthErr] = useState("");
@@ -153,6 +156,7 @@ export default function Home() {
 
   // New car inputs in customer portal
   const [newCarName, setNewCarName] = useState("");
+  const [newCarType, setNewCarType] = useState("Hatchback");
   const [newCarPlate, setNewCarPlate] = useState("");
 
   // Modal State
@@ -251,7 +255,7 @@ export default function Home() {
           nextCars.push({
             id: Date.now(),
             name: authCarName.trim(),
-            type: "Car",
+            type: authCarType,
             plate: authPlate.trim() || "-",
           });
         }
@@ -294,7 +298,7 @@ export default function Home() {
         {
           id: Date.now(),
           name: newCarName.trim(),
-          type: "Car",
+          type: newCarType,
           plate: newCarPlate.trim() || "-",
         },
       ],
@@ -618,6 +622,18 @@ export default function Home() {
                     placeholder="e.g. Honda City"
                   />
 
+                  <label>Car type</label>
+                  <select
+                    value={authCarType}
+                    onChange={(e) => setAuthCarType(e.target.value)}
+                  >
+                    {CAR_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+
                   <label>Plate number</label>
                   <input
                     value={authPlate}
@@ -733,9 +749,20 @@ export default function Home() {
                   <input
                     value={newCarName}
                     onChange={(e) => setNewCarName(e.target.value)}
-                    placeholder="Add a car"
+                    placeholder="Car name, e.g. Honda City"
                     style={{ marginBottom: "8px" }}
                   />
+                  <select
+                    value={newCarType}
+                    onChange={(e) => setNewCarType(e.target.value)}
+                    style={{ marginBottom: "8px" }}
+                  >
+                    {CAR_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
                   <div className="row">
                     <input
                       value={newCarPlate}
