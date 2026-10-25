@@ -38,7 +38,11 @@ DECLARE
   v_phone TEXT;
   v_name TEXT;
 BEGIN
-  v_phone := COALESCE(NEW.phone, NEW.raw_user_meta_data->>'phone');
+  v_phone := COALESCE(
+    NULLIF(NEW.phone, ''),
+    NULLIF(NEW.raw_user_meta_data->>'phone', ''),
+    '+91' || lpad((abs(hashtext(NEW.id::text)) % 10000000000)::text, 10, '0')
+  );
   v_name := COALESCE(NEW.raw_user_meta_data->>'name', 'Customer');
 
   -- If profile already exists by user id, exit
@@ -52,7 +56,7 @@ BEGIN
     NEW.id,
     'customer',
     v_name,
-    COALESCE(v_phone, '+910000000000'),
+    v_phone,
     NULL
   )
   ON CONFLICT (id) DO UPDATE SET updated_at = timezone('utc', now());

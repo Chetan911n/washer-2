@@ -1,61 +1,36 @@
--- Development Seed File
+-- Reference Data Seed File
 -- AppWasher Platform
--- Seeded test users: chetan (customer), station (station head), rajesh, suresh, imran (washers)
--- Clearly fake test numbers +910000000001 through +910000000005
+-- ONLY reference data: stations, packages, package_prices, settings.
+-- No auth users, no bookings, no phone numbers, no passwords.
 
--- 1. Stations (guaranteed present)
+-- 1. Stations
 INSERT INTO public.stations (id, name, area)
 VALUES ('green_valley', 'Green Valley Station', 'Hinjewadi, Pune')
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, area = EXCLUDED.area;
 
--- 2. Auth Users (deterministic test user accounts for local dev)
-INSERT INTO auth.users (
-  instance_id,
-  id,
-  aud,
-  role,
-  email,
-  encrypted_password,
-  email_confirmed_at,
-  phone,
-  phone_confirmed_at,
-  raw_app_meta_data,
-  raw_user_meta_data,
-  created_at,
-  updated_at,
-  confirmation_token,
-  recovery_token
-) VALUES
-  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'chetan@dev.appwasher.local', '', now(), '+910000000001', now(), '{"provider":"phone","providers":["phone"]}', '{"name":"Chetan Sharma","phone":"+910000000001"}', now(), now(), '', ''),
-  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000002', 'authenticated', 'authenticated', 'station@dev.appwasher.local', '', now(), '+910000000002', now(), '{"provider":"phone","providers":["phone"]}', '{"name":"Station Head (Vikram)","phone":"+910000000002"}', now(), now(), '', ''),
-  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated', 'rajesh@dev.appwasher.local', '', now(), '+910000000003', now(), '{"provider":"phone","providers":["phone"]}', '{"name":"Rajesh Kumar","phone":"+910000000003"}', now(), now(), '', ''),
-  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000004', 'authenticated', 'authenticated', 'suresh@dev.appwasher.local', '', now(), '+910000000004', now(), '{"provider":"phone","providers":["phone"]}', '{"name":"Suresh Verma","phone":"+910000000004"}', now(), now(), '', ''),
-  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000005', 'authenticated', 'authenticated', 'imran@dev.appwasher.local', '', now(), '+910000000005', now(), '{"provider":"phone","providers":["phone"]}', '{"name":"Imran Khan","phone":"+910000000005"}', now(), now(), '', '')
-ON CONFLICT (id) DO NOTHING;
+-- 2. Packages
+INSERT INTO public.packages (id, name, description)
+VALUES 
+  ('ext', 'Exterior Foam Wash', 'Foam wash, wheel clean, glass shine'),
+  ('deep', 'Deep Wash & Polish', 'Foam wash, tyre dressing, wax polish'),
+  ('prem', 'Premium Detail', 'Deep wash plus interior vacuum and dashboard care')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description;
 
--- 3. Profiles (Explicitly assigned roles by administrator)
-INSERT INTO public.profiles (id, role, name, phone, station_id)
+-- 3. Package Prices (flat rates across all car types: ext 499, deep 799, prem 1199)
+INSERT INTO public.package_prices (package_id, car_type, price_inr)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', 'customer', 'Chetan Sharma', '+910000000001', NULL),
-  ('00000000-0000-0000-0000-000000000002', 'station_head', 'Station Head (Vikram)', '+910000000002', 'green_valley'),
-  ('00000000-0000-0000-0000-000000000003', 'washer', 'Rajesh Kumar', '+910000000003', 'green_valley'),
-  ('00000000-0000-0000-0000-000000000004', 'washer', 'Suresh Verma', '+910000000004', 'green_valley'),
-  ('00000000-0000-0000-0000-000000000005', 'washer', 'Imran Khan', '+910000000005', 'green_valley')
-ON CONFLICT (id) DO UPDATE SET
-  role = EXCLUDED.role,
-  name = EXCLUDED.name,
-  phone = EXCLUDED.phone,
-  station_id = EXCLUDED.station_id;
+  ('ext', 'hatchback', 499),
+  ('ext', 'sedan', 499),
+  ('ext', 'suv', 499),
+  ('deep', 'hatchback', 799),
+  ('deep', 'sedan', 799),
+  ('deep', 'suv', 799),
+  ('prem', 'hatchback', 1199),
+  ('prem', 'sedan', 1199),
+  ('prem', 'suv', 1199)
+ON CONFLICT (package_id, car_type) DO UPDATE SET price_inr = EXCLUDED.price_inr;
 
--- 4. Initial customer cars for Chetan
-INSERT INTO public.cars (id, owner_id, name, car_type, plate)
-VALUES
-  ('car_chetan_sedan', '00000000-0000-0000-0000-000000000001', 'Honda City', 'sedan', 'MH 12 AB 1234'),
-  ('car_chetan_suv', '00000000-0000-0000-0000-000000000001', 'Hyundai Creta', 'suv', 'MH 12 CD 5678')
-ON CONFLICT (id) DO NOTHING;
-
--- 5. Initial customer parking spot for Chetan
-INSERT INTO public.parking_spots (id, owner_id, address, spot_label)
-VALUES
-  ('spot_chetan_home', '00000000-0000-0000-0000-000000000001', 'Blue Ridge Tower B, Hinjewadi Phase 1, Pune', 'Basement B2, Spot #42')
-ON CONFLICT (id) DO NOTHING;
+-- 4. Settings
+INSERT INTO public.settings (key, value)
+VALUES ('washer_slot_capacity', '2'::jsonb)
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;

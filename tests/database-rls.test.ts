@@ -46,8 +46,39 @@ async function runDatabaseTests() {
   const stationHeadId = "00000000-0000-0000-0000-000000000002";
   const rajeshId = "00000000-0000-0000-0000-000000000003";
 
-  // Clean bookings from prior test runs for complete test isolation
-  runSql("DELETE FROM public.bookings;");
+  // Provision isolated test users and profiles transiently for test execution
+  runSql(`
+    DELETE FROM public.bookings;
+    DELETE FROM public.cars WHERE owner_id = '${chetanId}';
+    DELETE FROM public.parking_spots WHERE owner_id = '${chetanId}';
+    DELETE FROM public.profiles WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}');
+    DELETE FROM auth.users WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}');
+
+    INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, phone, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+    VALUES
+      ('${chetanId}', 'authenticated', 'authenticated', 'test_chetan@appwasher.test', '', now(), '+910000000001', '{"provider":"phone"}', '{"name":"Chetan Sharma","phone":"+910000000001"}', now(), now()),
+      ('${stationHeadId}', 'authenticated', 'authenticated', 'test_station@appwasher.test', '', now(), '+910000000002', '{"provider":"phone"}', '{"name":"Station Head","phone":"+910000000002"}', now(), now()),
+      ('${rajeshId}', 'authenticated', 'authenticated', 'test_rajesh@appwasher.test', '', now(), '+910000000003', '{"provider":"phone"}', '{"name":"Rajesh Washer","phone":"+910000000003"}', now(), now())
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.profiles (id, role, name, phone, station_id)
+    VALUES
+      ('${chetanId}', 'customer', 'Chetan Sharma', '+910000000001', NULL),
+      ('${stationHeadId}', 'station_head', 'Station Head', '+910000000002', 'green_valley'),
+      ('${rajeshId}', 'washer', 'Rajesh Washer', '+910000000003', 'green_valley')
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, name = EXCLUDED.name, phone = EXCLUDED.phone, station_id = EXCLUDED.station_id;
+
+    INSERT INTO public.cars (id, owner_id, name, car_type, plate)
+    VALUES
+      ('car_chetan_sedan', '${chetanId}', 'Honda City', 'sedan', 'MH 12 AB 1234'),
+      ('car_chetan_suv', '${chetanId}', 'Hyundai Creta', 'suv', 'MH 12 CD 5678')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.parking_spots (id, owner_id, address, spot_label)
+    VALUES
+      ('spot_chetan_home', '${chetanId}', 'Blue Ridge Tower B, Pune', 'B2 #42')
+    ON CONFLICT (id) DO NOTHING;
+  `);
 
   // Test 1: Customer cannot change their own role (privilege escalation prevention)
   console.log("Test 1: Customer cannot alter their own role");
@@ -288,6 +319,15 @@ async function runDatabaseTests() {
     Boolean(directUpdateRes.error && directUpdateRes.error.includes("permission denied")),
     "Direct UPDATE on public.bookings denied to authenticated role"
   );
+
+  // Teardown: Clean up transient test users and data
+  runSql(`
+    DELETE FROM public.bookings;
+    DELETE FROM public.cars WHERE owner_id = '${chetanId}';
+    DELETE FROM public.parking_spots WHERE owner_id = '${chetanId}';
+    DELETE FROM public.profiles WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}');
+    DELETE FROM auth.users WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}');
+  `);
 
   console.log("\n--------------------------------------------------------");
   console.log(`Results: ${passCount} Passed, ${failCount} Failed`);
