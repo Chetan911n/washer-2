@@ -38,12 +38,12 @@ DECLARE
   v_phone TEXT;
   v_name TEXT;
 BEGIN
-  v_phone := COALESCE(
-    NULLIF(NEW.phone, ''),
-    NULLIF(NEW.raw_user_meta_data->>'phone', ''),
-    '+91' || lpad((abs(hashtext(NEW.id::text)) % 10000000000)::text, 10, '0')
-  );
-  v_name := COALESCE(NEW.raw_user_meta_data->>'name', 'Customer');
+  v_phone := COALESCE(NULLIF(NEW.phone, ''), NULLIF(NEW.raw_user_meta_data->>'phone', ''));
+  IF v_phone IS NULL THEN
+    RAISE EXCEPTION 'A valid phone number is required to create a profile.';
+  END IF;
+
+  v_name := COALESCE(NULLIF(NEW.raw_user_meta_data->>'name', ''), 'Customer');
 
   -- If profile already exists by user id, exit
   IF EXISTS (SELECT 1 FROM public.profiles WHERE id = NEW.id) THEN
