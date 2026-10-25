@@ -47,9 +47,10 @@ export function runSql(sql: string, connectionString: string = DEFAULT_TEST_DB_U
       { encoding: "utf-8" }
     ).trim();
     
-    // Find json line if present
-    const lines = stdout.split("\n").map(l => l.trim()).filter(Boolean);
+    // Find json line if present and strip command tags like SET
+    const lines = stdout.split("\n").map(l => l.trim()).filter(l => l && l !== "SET");
     const jsonLine = lines.find(l => l.startsWith("{") && l.endsWith("}"));
+    const lastLine = lines[lines.length - 1] || "";
     let json: any = undefined;
     if (jsonLine) {
       try {
@@ -57,7 +58,7 @@ export function runSql(sql: string, connectionString: string = DEFAULT_TEST_DB_U
       } catch (e) {}
     }
 
-    return { stdout, json };
+    return { stdout, lastLine, json };
   } catch (err: any) {
     return { stdout: "", error: err.stderr || err.message };
   }
@@ -394,13 +395,114 @@ async function runDatabaseTests() {
     "Direct UPDATE on public.bookings denied to authenticated role"
   );
 
+  // Test 12: RLS Isolation - Customer cannot read another customer's booking
+  console.log("\nTest 12: RLS Isolation - Customer cannot read another customer's booking");
+  const otherCustomerId = "00000000-0000-0000-0000-000000000077";
+  runSql(`
+    INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, phone, raw_user_meta_data, created_at, updated_at)
+    VALUES ('${otherCustomerId}', 'authenticated', 'authenticated', 'other@test.local', '', now(), '+919876543211', '{"name":"Other Customer"}', now(), now())
+    ON CONFLICT (id) DO NOTHING;
+  `);
+  const crossCustomerSql = `
+    SET ROLE authenticated;
+    SET request.jwt.claim.sub = '${otherCustomerId}';
+    SET request.jwt.claim.role = 'authenticated';
+    SELECT count(*) FROM public.bookings WHERE id = '${bookingId}';
+  `;
+  const crossCustomerRes = runSql(crossCustomerSql);
+  assert(
+    !crossCustomerRes.error && crossCustomerRes.lastLine === "0",
+    "Customer cannot read another customer's booking (RLS returns 0 rows)"
+  );
+
+  // Test 13: RLS Isolation - Washer cannot read unassigned booking
+  console.log("\nTest 13: RLS Isolation - Washer cannot read unassigned booking");
+  const unassignedBookingSql = `
+    SET request.jwt.claim.sub = '${chetanId}';
+    SELECT public.create_booking(
+      ARRAY['car_chetan_sedan'],
+      'ext',
+      (CURRENT_DATE + 3)::date,
+      '06:30',
+      'spot_chetan_home',
+      'green_valley'
+    );
+  `;
+  const unassignedRes = runSql(unassignedBookingSql);
+  const unassignedId = (unassignedRes.json || {}).id;
+
+  const washerReadUnassignedSql = `
+    SET ROLE authenticated;
+    SET request.jwt.claim.sub = '${rajeshId}';
+    SET request.jwt.claim.role = 'authenticated';
+    SELECT count(*) FROM public.bookings WHERE id = '${unassignedId}';
+  `;
+  const washerReadRes = runSql(washerReadUnassignedSql);
+  assert(
+    !washerReadRes.error && washerReadRes.lastLine === "0",
+    "Washer cannot read unassigned booking (RLS returns 0 rows)"
+  );
+
+  // Test 14: RLS Isolation - Station head cannot see another station's bookings
+  console.log("\nTest 14: RLS Isolation - Station head cannot see another station's bookings");
+  const otherStationHeadId = "00000000-0000-0000-0000-000000000066";
+  runSql(`
+    INSERT INTO public.stations (id, name, area) VALUES ('kothrud_station', 'Kothrud Station', 'Kothrud, Pune') ON CONFLICT (id) DO NOTHING;
+    INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, phone, raw_user_meta_data, created_at, updated_at)
+    VALUES ('${otherStationHeadId}', 'authenticated', 'authenticated', 'other_station@test.local', '', now(), '+919876543222', '{"name":"Kothrud Head"}', now(), now())
+    ON CONFLICT (id) DO NOTHING;
+    UPDATE public.profiles SET role = 'station_head', station_id = 'kothrud_station' WHERE id = '${otherStationHeadId}';
+  `);
+  const otherStationReadSql = `
+    SET ROLE authenticated;
+    SET request.jwt.claim.sub = '${otherStationHeadId}';
+    SET request.jwt.claim.role = 'authenticated';
+    SELECT count(*) FROM public.bookings WHERE id = '${unassignedId}';
+  `;
+  const otherStationReadRes = runSql(otherStationReadSql);
+  assert(
+    !otherStationReadRes.error && otherStationReadRes.lastLine === "0",
+    "Station head cannot see bookings from another station (RLS returns 0 rows)"
+  );
+
+  // Test 15: Price Snapshot - Changing package_prices table later does NOT alter existing booking total
+  console.log("\nTest 15: Price snapshot integrity");
+  runSql(`UPDATE public.package_prices SET price_inr = 999 WHERE package_id = 'ext' AND car_type = 'sedan';`);
+  const checkSnapshotSql = `SELECT total_inr FROM public.bookings WHERE id = '${unassignedId}';`;
+  const snapshotRes = runSql(checkSnapshotSql);
+  assert(
+    snapshotRes.stdout.trim() === "499",
+    `Existing booking total remains 499 after package price table was updated to 999 (got ${snapshotRes.stdout.trim()})`
+  );
+  runSql(`UPDATE public.package_prices SET price_inr = 499 WHERE package_id = 'ext' AND car_type = 'sedan';`);
+
+  // Test 16: Partial Unique Index - Two active bookings cannot take the same parking spot in the same slot
+  console.log("\nTest 16: Partial unique index prevents double booking of spot");
+  const duplicateSpotBookingSql = `
+    SET request.jwt.claim.sub = '${chetanId}';
+    SELECT public.create_booking(
+      ARRAY['car_chetan_suv'],
+      'deep',
+      (CURRENT_DATE + 3)::date,
+      '06:30',
+      'spot_chetan_home',
+      'green_valley'
+    );
+  `;
+  const dupSpotRes = runSql(duplicateSpotBookingSql);
+  assert(
+    Boolean(dupSpotRes.error && (dupSpotRes.error.includes("idx_unique_active_spot_booking") || dupSpotRes.error.includes("unique constraint"))),
+    "Partial unique index blocks second active booking for the same spot and time slot"
+  );
+
   // Teardown: Clean up transient test users and data
   runSql(`
     DELETE FROM public.bookings;
     DELETE FROM public.cars WHERE owner_id = '${chetanId}';
     DELETE FROM public.parking_spots WHERE owner_id = '${chetanId}';
-    DELETE FROM public.profiles WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}');
-    DELETE FROM auth.users WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}');
+    DELETE FROM public.profiles WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}', '${otherCustomerId}', '${otherStationHeadId}');
+    DELETE FROM auth.users WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}', '${otherCustomerId}', '${otherStationHeadId}');
+    DELETE FROM public.stations WHERE id = 'kothrud_station';
   `);
 
   console.log("\n--------------------------------------------------------");

@@ -4,7 +4,10 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   fetchUserBookings,
   fetchUserCars,
+  addUserCar,
+  deleteUserCar,
   fetchUserParkingSpot,
+  saveUserParkingSpot,
   createBookingRpc,
   assignWasherRpc,
   startWashRpc,
@@ -15,8 +18,9 @@ import {
   settlePlatformFeeRpc,
   uploadBookingPhoto,
   subscribeToRealtimeBookings,
+  migrateLegacyLocalData,
   DBBooking,
-} from "@/lib/supabaseStore";
+} from "@/lib/dataService";
 import { SEEDED_DEV_USERS } from "@/lib/auth/constants";
 
 const K = "appwasher_v2";
@@ -359,14 +363,12 @@ export default function Home() {
     }
   };
 
-  // Initialize and listen to storage
+  // Initialize state
   useEffect(() => {
     try {
       const stored = localStorage.getItem(K);
       if (stored) {
         setS(JSON.parse(stored));
-      } else {
-        localStorage.setItem(K, JSON.stringify(seed));
       }
     } catch {}
     setMounted(true);
@@ -382,13 +384,7 @@ export default function Home() {
   }, [S.userId, S.role]);
 
   const updateState = (updater: (prev: AppState) => AppState) => {
-    setS((prev) => {
-      const next = updater(prev);
-      try {
-        localStorage.setItem(K, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
+    setS((prev) => updater(prev));
   };
 
   // Role Tab Switching
@@ -478,7 +474,20 @@ export default function Home() {
         phone: user.phone,
       }));
 
-      // Fetch fresh data from Supabase
+      // Fetch fresh data from Supabase and migrate legacy local data if present
+      try {
+        const stored = localStorage.getItem(K);
+        if (stored && localStorage.getItem("appwasher_v2_migrated") !== "true") {
+          const parsed = JSON.parse(stored);
+          migrateLegacyLocalData(user.id, parsed).then((migrated) => {
+            if (migrated) {
+              localStorage.setItem("appwasher_v2_migrated", "true");
+              refreshFromSupabase(user.id, roleMapped, user.stationId);
+            }
+          });
+        }
+      } catch {}
+
       refreshFromSupabase(user.id, roleMapped, user.stationId);
     } catch (err: any) {
       setAuthErr("Network error verifying code. Please try again.");
@@ -529,6 +538,19 @@ export default function Home() {
           phone: u.phone,
         }));
 
+        try {
+          const stored = localStorage.getItem(K);
+          if (stored && localStorage.getItem("appwasher_v2_migrated") !== "true") {
+            const parsed = JSON.parse(stored);
+            migrateLegacyLocalData(u.id, parsed).then((migrated) => {
+              if (migrated) {
+                localStorage.setItem("appwasher_v2_migrated", "true");
+                refreshFromSupabase(u.id, roleMapped, u.stationId);
+              }
+            });
+          }
+        } catch {}
+
         refreshFromSupabase(u.id, roleMapped, u.stationId);
       } else {
         setAuthErr(data.error || "Demo login failed.");
@@ -553,13 +575,32 @@ export default function Home() {
   };
 
   // Car management
-  const handleAddCar = () => {
+  const handleAddCar = async () => {
     if (!newCarName.trim()) return;
+    const typeLower = (newCarType.toLowerCase() || "sedan") as "hatchback" | "sedan" | "suv";
+    const plateUpper = (newCarPlate.trim() || "MH 12 AB 1234").toUpperCase();
+
+    if (S.userId) {
+      try {
+        const created = await addUserCar(S.userId, newCarName.trim(), typeLower, plateUpper);
+        updateState((prev) => ({
+          ...prev,
+          cars: [...prev.cars, created],
+        }));
+        setNewCarName("");
+        setNewCarPlate("");
+        return;
+      } catch (err: any) {
+        alert(err.message || "Failed to add car to database.");
+        return;
+      }
+    }
+
     const newCar = {
       id: "car_" + Date.now(),
       name: newCarName.trim(),
       type: newCarType,
-      plate: newCarPlate.trim() || "-",
+      plate: plateUpper,
     };
 
     updateState((prev) => ({
@@ -570,7 +611,16 @@ export default function Home() {
     setNewCarPlate("");
   };
 
-  const handleDeleteCar = (id: string | number) => {
+  const handleDeleteCar = async (id: string | number) => {
+    if (S.userId && typeof id === "string" && !id.startsWith("car_")) {
+      try {
+        await deleteUserCar(S.userId, id);
+      } catch (err: any) {
+        alert(err.message || "Failed to delete car from database.");
+        return;
+      }
+    }
+
     updateState((prev) => ({
       ...prev,
       cars: prev.cars.filter((c) => c.id !== id),
@@ -620,20 +670,30 @@ export default function Home() {
     const scheduledDateIso = toIsoDate(M.d || "");
     const slotStartRaw = SLOT_MAP[M.sl || "08:30 AM"] || "08:30";
 
-    try {
-      // 1. Call Supabase RPC to enforce database validation & price snapshot
-      if (S.userId) {
+    if (S.userId) {
+      try {
+        let spotId = S.spotId;
+        if (!spotId) {
+          const spot = await saveUserParkingSpot(S.userId, M.addr || S.addr, M.spot || S.spot);
+          spotId = spot.id;
+        }
+
         await createBookingRpc({
           carIds: M.cars.map(String),
           packageId: pkgItem.id,
           scheduledDate: scheduledDateIso,
           slotStart: slotStartRaw,
-          parkingSpotId: S.spotId || "spot_chetan_home",
+          parkingSpotId: spotId,
           stationId: "green_valley",
         });
+
+        await refreshFromSupabase(S.userId, S.role || "customer", "green_valley");
+        setM(null);
+        return;
+      } catch (e: any) {
+        alert(e.message || "Failed to create booking.");
+        return;
       }
-    } catch (e: any) {
-      console.warn("createBookingRpc fallback / notice:", e.message);
     }
 
     // Update client state & refresh
@@ -715,26 +775,39 @@ export default function Home() {
     index: number,
     file?: File
   ) => {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Invalid file: Please upload an image file.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image exceeds 5MB size limit. Please upload a smaller photo.");
+      return;
+    }
+
     // 1. Update UI slot immediately
     updateState((prev) => ({
       ...prev,
       bk: prev.bk.map((b) => {
         if (b.id !== bookingId) return b;
         const arr = [...b[key]];
-        arr[index] = arr[index] ? 0 : 1;
+        arr[index] = 1;
         return { ...b, [key]: arr };
       }),
     }));
 
     // 2. If photo file is selected from camera, upload to Supabase Storage & database
-    if (file && S.userId) {
+    if (S.userId) {
       try {
         const kind = key === "bf" ? "before" : "after";
         const position =
           key === "bf" ? BEFORE_POSITIONS[index] : AFTER_POSITIONS[index];
         await uploadBookingPhoto(bookingId, kind, position, file, S.userId);
+        refreshFromSupabase(S.userId, S.role || "washer", "green_valley");
       } catch (err: any) {
-        console.warn("Photo upload warning:", err.message);
+        alert(err.message || "Photo upload failed.");
       }
     }
   };
