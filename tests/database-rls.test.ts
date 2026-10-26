@@ -13,17 +13,44 @@ function assert(condition: boolean, testName: string, details?: any) {
   }
 }
 
-function runSql(sql: string): { stdout: string; error?: string; json?: any } {
+const LOCAL_DB_HOST = "127.0.0.1";
+const LOCAL_DB_PORT = "54322";
+const DEFAULT_TEST_DB_URL = process.env.TEST_DATABASE_URL || `postgresql://postgres:postgres@${LOCAL_DB_HOST}:${LOCAL_DB_PORT}/postgres`;
+
+export function validateLocalConnection(connectionString: string): { host: string; port: string } {
   try {
+    const parsed = new URL(connectionString);
+    const host = parsed.hostname;
+    const port = parsed.port || "5432";
+    if (host !== LOCAL_DB_HOST || port !== LOCAL_DB_PORT) {
+      throw new Error(
+        `SAFETY REFUSAL: Database tests are strictly restricted to the local development database (${LOCAL_DB_HOST}:${LOCAL_DB_PORT}). Attempted connection to non-local target: ${host}:${port}. Execution aborted to protect external databases.`
+      );
+    }
+    return { host, port };
+  } catch (err: any) {
+    if (err.message.startsWith("SAFETY REFUSAL")) {
+      throw err;
+    }
+    throw new Error(`SAFETY REFUSAL: Invalid database connection target '${connectionString}': ${err.message}`);
+  }
+}
+
+export function runSql(sql: string, connectionString: string = DEFAULT_TEST_DB_URL): { stdout: string; error?: string; json?: any } {
+  try {
+    // Safety Guard: Refuse execution if connection does not point to local database (127.0.0.1:54322)
+    validateLocalConnection(connectionString);
+
     const escapedSql = sql.replace(/"/g, '\\"');
     const stdout = execSync(
       `docker exec supabase_db_jgekymuphznmfsbdexaw psql -U postgres -d postgres -t -A -c "${escapedSql}"`,
       { encoding: "utf-8" }
     ).trim();
     
-    // Find json line if present
-    const lines = stdout.split("\n").map(l => l.trim()).filter(Boolean);
+    // Find json line if present and strip command tags like SET
+    const lines = stdout.split("\n").map(l => l.trim()).filter(l => l && l !== "SET");
     const jsonLine = lines.find(l => l.startsWith("{") && l.endsWith("}"));
+    const lastLine = lines[lines.length - 1] || "";
     let json: any = undefined;
     if (jsonLine) {
       try {
@@ -31,7 +58,7 @@ function runSql(sql: string): { stdout: string; error?: string; json?: any } {
       } catch (e) {}
     }
 
-    return { stdout, json };
+    return { stdout, lastLine, json };
   } catch (err: any) {
     return { stdout: "", error: err.stderr || err.message };
   }
@@ -42,15 +69,94 @@ async function runDatabaseTests() {
   console.log("TEST SUITE 2: Supabase Database, RLS, State Machine & Capacity");
   console.log("========================================================\n");
 
+  // Test 0: Safety Guard verifies refusal of non-local database targets
+  console.log("Test 0: Safety Guard refuses non-local database connections");
+  const remoteTargetUrl = "postgresql://postgres:prod-secret@db.jgekymuphznmfsbdexaw.supabase.co:5432/postgres";
+  const safetyRes = runSql("SELECT 1;", remoteTargetUrl);
+  assert(
+    Boolean(safetyRes.error && safetyRes.error.includes("SAFETY REFUSAL") && safetyRes.error.includes("db.jgekymuphznmfsbdexaw.supabase.co")),
+    "runSql strictly refuses execution against remote/production host (db.jgekymuphznmfsbdexaw.supabase.co)"
+  );
+
+  const wrongPortUrl = "postgresql://postgres:postgres@127.0.0.1:54321/postgres";
+  const wrongPortRes = runSql("SELECT 1;", wrongPortUrl);
+  assert(
+    Boolean(wrongPortRes.error && wrongPortRes.error.includes("SAFETY REFUSAL") && wrongPortRes.error.includes("54321")),
+    "runSql strictly refuses execution against non-db port (127.0.0.1:54321)"
+  );
+
+  // Test 1: Phone requirement on auth signup (handle_new_user trigger)
+  console.log("\nTest 1: handle_new_user trigger requires phone number on signup");
+  const noPhoneUserId = "00000000-0000-0000-0000-000000000099";
+  const noPhoneSignupSql = `
+    INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+    VALUES ('${noPhoneUserId}', 'authenticated', 'authenticated', 'no_phone@test.local', '', now(), '{"provider":"email"}', '{"name":"No Phone"}', now(), now());
+  `;
+  const noPhoneRes = runSql(noPhoneSignupSql);
+  assert(
+    Boolean(noPhoneRes.error && noPhoneRes.error.includes("A valid phone number is required to create a profile")),
+    "Signup without phone number is rejected with clear error message"
+  );
+
+  const validPhoneUserId = "00000000-0000-0000-0000-000000000098";
+  const validPhoneSignupSql = `
+    INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, phone, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+    VALUES ('${validPhoneUserId}', 'authenticated', 'authenticated', 'valid_phone@test.local', '', now(), '+919876500000', '{"provider":"phone"}', '{"name":"Pooja Patel"}', now(), now());
+    SELECT row_to_json(p) FROM public.profiles p WHERE id = '${validPhoneUserId}';
+  `;
+  const validPhoneRes = runSql(validPhoneSignupSql);
+  assert(!validPhoneRes.error, "Signup with valid phone number succeeds", validPhoneRes.error);
+  const createdProfile = validPhoneRes.json || {};
+  assert(createdProfile.role === "customer", "Created profile role is customer");
+  assert(createdProfile.phone === "+919876500000", "Created profile phone matches signed up phone");
+  assert(createdProfile.name === "Pooja Patel", "Created profile name matches metadata");
+
+  // Clean up transient test user 98
+  runSql(`
+    DELETE FROM public.profiles WHERE id = '${validPhoneUserId}';
+    DELETE FROM auth.users WHERE id = '${validPhoneUserId}';
+  `);
+
   const chetanId = "00000000-0000-0000-0000-000000000001";
   const stationHeadId = "00000000-0000-0000-0000-000000000002";
   const rajeshId = "00000000-0000-0000-0000-000000000003";
 
-  // Clean bookings from prior test runs for complete test isolation
-  runSql("DELETE FROM public.bookings;");
+  // Provision isolated test users and profiles transiently for test execution
+  runSql(`
+    DELETE FROM public.bookings;
+    DELETE FROM public.cars WHERE owner_id = '${chetanId}';
+    DELETE FROM public.parking_spots WHERE owner_id = '${chetanId}';
+    DELETE FROM public.profiles WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}');
+    DELETE FROM auth.users WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}');
 
-  // Test 1: Customer cannot change their own role (privilege escalation prevention)
-  console.log("Test 1: Customer cannot alter their own role");
+    INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, phone, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+    VALUES
+      ('${chetanId}', 'authenticated', 'authenticated', 'test_chetan@appwasher.test', '', now(), '+910000000001', '{"provider":"phone"}', '{"name":"Chetan Sharma","phone":"+910000000001"}', now(), now()),
+      ('${stationHeadId}', 'authenticated', 'authenticated', 'test_station@appwasher.test', '', now(), '+910000000002', '{"provider":"phone"}', '{"name":"Station Head","phone":"+910000000002"}', now(), now()),
+      ('${rajeshId}', 'authenticated', 'authenticated', 'test_rajesh@appwasher.test', '', now(), '+910000000003', '{"provider":"phone"}', '{"name":"Rajesh Washer","phone":"+910000000003"}', now(), now())
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.profiles (id, role, name, phone, station_id)
+    VALUES
+      ('${chetanId}', 'customer', 'Chetan Sharma', '+910000000001', NULL),
+      ('${stationHeadId}', 'station_head', 'Station Head', '+910000000002', 'green_valley'),
+      ('${rajeshId}', 'washer', 'Rajesh Washer', '+910000000003', 'green_valley')
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, name = EXCLUDED.name, phone = EXCLUDED.phone, station_id = EXCLUDED.station_id;
+
+    INSERT INTO public.cars (id, owner_id, name, car_type, plate)
+    VALUES
+      ('car_chetan_sedan', '${chetanId}', 'Honda City', 'sedan', 'MH 12 AB 1234'),
+      ('car_chetan_suv', '${chetanId}', 'Hyundai Creta', 'suv', 'MH 12 CD 5678')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.parking_spots (id, owner_id, address, spot_label)
+    VALUES
+      ('spot_chetan_home', '${chetanId}', 'Blue Ridge Tower B, Pune', 'B2 #42')
+    ON CONFLICT (id) DO NOTHING;
+  `);
+
+  // Test 2: Customer cannot change their own role (privilege escalation prevention)
+  console.log("\nTest 2: Customer cannot alter their own role");
   const roleTamperSql = `
     SET ROLE authenticated;
     SET request.jwt.claim.sub = '${chetanId}';
@@ -63,8 +169,8 @@ async function runDatabaseTests() {
     "Customer attempt to update role to 'station_head' is rejected by security trigger"
   );
 
-  // Test 2: Booking creation via create_booking function
-  console.log("\nTest 2: create_booking function snapshots prices, creates readable ID, and checks spot ownership");
+  // Test 3: Booking creation via create_booking function
+  console.log("\nTest 3: create_booking function snapshots prices, creates readable ID, and checks spot ownership");
   const createBookingSql = `
     SET request.jwt.claim.sub = '${chetanId}';
     SELECT public.create_booking(
@@ -89,8 +195,8 @@ async function runDatabaseTests() {
 
   const bookingId = createdBooking.id;
 
-  // Test 3: Status state machine transitions
-  console.log("\nTest 3: Enforcing status flow: pending -> assigned -> washing -> awaiting_payment -> paid");
+  // Test 4: Status state machine transitions
+  console.log("\nTest 4: Enforcing status flow: pending -> assigned -> washing -> awaiting_payment -> paid");
   
   // Illegal transition: attempt to jump from pending directly to washing
   const illegalJumpSql = `
@@ -121,8 +227,8 @@ async function runDatabaseTests() {
     "Customer cannot assign washer"
   );
 
-  // Test 4: Washer slot capacity (max 2 active bookings per slot)
-  console.log("\nTest 4: Washer capacity constraint (max 2 active bookings per date & slot)");
+  // Test 5: Washer slot capacity (max 2 active bookings per slot)
+  console.log("\nTest 5: Washer capacity constraint (max 2 active bookings per date & slot)");
   // Ensure extra spots exist
   runSql(`
     INSERT INTO public.parking_spots (id, owner_id, address, spot_label)
@@ -181,8 +287,8 @@ async function runDatabaseTests() {
     "3rd assignment to same washer at same slot is blocked by capacity trigger"
   );
 
-  // Test 5: start_wash requires 4 before photos
-  console.log("\nTest 5: start_wash requires 4 before-wash photos (front, rear, left, right)");
+  // Test 6: start_wash requires 4 before photos
+  console.log("\nTest 6: start_wash requires 4 before-wash photos (front, rear, left, right)");
   const startWashWithoutPhotosSql = `
     SET request.jwt.claim.sub = '${rajeshId}';
     SELECT public.start_wash('${bookingId}');
@@ -214,8 +320,8 @@ async function runDatabaseTests() {
   const startWashSuccessRes = runSql(startWashSuccessSql);
   assert(!startWashSuccessRes.error, "start_wash succeeds after all 4 before-photos uploaded", startWashSuccessRes.error);
 
-  // Test 6: Customer cannot cancel after washing starts
-  console.log("\nTest 6: Customer cancellation rules");
+  // Test 7: Customer cannot cancel after washing starts
+  console.log("\nTest 7: Customer cancellation rules");
   const cancelAfterWashingSql = `
     SET request.jwt.claim.sub = '${chetanId}';
     SELECT public.cancel_booking('${bookingId}');
@@ -226,8 +332,8 @@ async function runDatabaseTests() {
     "Customer cannot cancel booking once washing has started"
   );
 
-  // Test 7: complete_job requires 4 after-photos
-  console.log("\nTest 7: complete_job requires 4 after-wash photos");
+  // Test 8: complete_job requires 4 after-photos
+  console.log("\nTest 8: complete_job requires 4 after-wash photos");
   const completeWithoutPhotosSql = `
     SET request.jwt.claim.sub = '${rajeshId}';
     SELECT public.complete_job('${bookingId}');
@@ -257,8 +363,8 @@ async function runDatabaseTests() {
   const completeSuccessRes = runSql(completeSuccessSql);
   assert(!completeSuccessRes.error, "complete_job succeeds after 4 after-photos uploaded -> status awaiting_payment", completeSuccessRes.error);
 
-  // Test 8: Record cash payment -> status paid
-  console.log("\nTest 8: Recording cash payment");
+  // Test 9: Record cash payment -> status paid
+  console.log("\nTest 9: Recording cash payment");
   const recordCashSql = `
     SET request.jwt.claim.sub = '${rajeshId}';
     SELECT public.record_cash_payment('${bookingId}');
@@ -266,8 +372,8 @@ async function runDatabaseTests() {
   const recordCashRes = runSql(recordCashSql);
   assert(!recordCashRes.error, "Assigned washer can record cash payment -> status moves to paid", recordCashRes.error);
 
-  // Test 9: Customer submits review on paid booking
-  console.log("\nTest 9: Customer review submission");
+  // Test 10: Customer submits review on paid booking
+  console.log("\nTest 10: Customer review submission");
   const reviewSql = `
     SET request.jwt.claim.sub = '${chetanId}';
     SELECT public.submit_review('${bookingId}', 5, ARRAY['On Time', 'Spotless Glass'], 50);
@@ -275,8 +381,8 @@ async function runDatabaseTests() {
   const reviewRes = runSql(reviewSql);
   assert(!reviewRes.error, "Customer can submit rating 5, tags, and tip on completed booking", reviewRes.error);
 
-  // Test 10: Revocation of direct UPDATE on client roles
-  console.log("\nTest 10: Direct UPDATE permissions revoked on bookings, payments, settlements");
+  // Test 11: Revocation of direct UPDATE on client roles
+  console.log("\nTest 11: Direct UPDATE permissions revoked on bookings, payments, settlements");
   const directUpdateSql = `
     SET ROLE authenticated;
     SET request.jwt.claim.sub = '${chetanId}';
@@ -288,6 +394,116 @@ async function runDatabaseTests() {
     Boolean(directUpdateRes.error && directUpdateRes.error.includes("permission denied")),
     "Direct UPDATE on public.bookings denied to authenticated role"
   );
+
+  // Test 12: RLS Isolation - Customer cannot read another customer's booking
+  console.log("\nTest 12: RLS Isolation - Customer cannot read another customer's booking");
+  const otherCustomerId = "00000000-0000-0000-0000-000000000077";
+  runSql(`
+    INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, phone, raw_user_meta_data, created_at, updated_at)
+    VALUES ('${otherCustomerId}', 'authenticated', 'authenticated', 'other@test.local', '', now(), '+919876543211', '{"name":"Other Customer"}', now(), now())
+    ON CONFLICT (id) DO NOTHING;
+  `);
+  const crossCustomerSql = `
+    SET ROLE authenticated;
+    SET request.jwt.claim.sub = '${otherCustomerId}';
+    SET request.jwt.claim.role = 'authenticated';
+    SELECT count(*) FROM public.bookings WHERE id = '${bookingId}';
+  `;
+  const crossCustomerRes = runSql(crossCustomerSql);
+  assert(
+    !crossCustomerRes.error && crossCustomerRes.lastLine === "0",
+    "Customer cannot read another customer's booking (RLS returns 0 rows)"
+  );
+
+  // Test 13: RLS Isolation - Washer cannot read unassigned booking
+  console.log("\nTest 13: RLS Isolation - Washer cannot read unassigned booking");
+  const unassignedBookingSql = `
+    SET request.jwt.claim.sub = '${chetanId}';
+    SELECT public.create_booking(
+      ARRAY['car_chetan_sedan'],
+      'ext',
+      (CURRENT_DATE + 3)::date,
+      '06:30',
+      'spot_chetan_home',
+      'green_valley'
+    );
+  `;
+  const unassignedRes = runSql(unassignedBookingSql);
+  const unassignedId = (unassignedRes.json || {}).id;
+
+  const washerReadUnassignedSql = `
+    SET ROLE authenticated;
+    SET request.jwt.claim.sub = '${rajeshId}';
+    SET request.jwt.claim.role = 'authenticated';
+    SELECT count(*) FROM public.bookings WHERE id = '${unassignedId}';
+  `;
+  const washerReadRes = runSql(washerReadUnassignedSql);
+  assert(
+    !washerReadRes.error && washerReadRes.lastLine === "0",
+    "Washer cannot read unassigned booking (RLS returns 0 rows)"
+  );
+
+  // Test 14: RLS Isolation - Station head cannot see another station's bookings
+  console.log("\nTest 14: RLS Isolation - Station head cannot see another station's bookings");
+  const otherStationHeadId = "00000000-0000-0000-0000-000000000066";
+  runSql(`
+    INSERT INTO public.stations (id, name, area) VALUES ('kothrud_station', 'Kothrud Station', 'Kothrud, Pune') ON CONFLICT (id) DO NOTHING;
+    INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, phone, raw_user_meta_data, created_at, updated_at)
+    VALUES ('${otherStationHeadId}', 'authenticated', 'authenticated', 'other_station@test.local', '', now(), '+919876543222', '{"name":"Kothrud Head"}', now(), now())
+    ON CONFLICT (id) DO NOTHING;
+    UPDATE public.profiles SET role = 'station_head', station_id = 'kothrud_station' WHERE id = '${otherStationHeadId}';
+  `);
+  const otherStationReadSql = `
+    SET ROLE authenticated;
+    SET request.jwt.claim.sub = '${otherStationHeadId}';
+    SET request.jwt.claim.role = 'authenticated';
+    SELECT count(*) FROM public.bookings WHERE id = '${unassignedId}';
+  `;
+  const otherStationReadRes = runSql(otherStationReadSql);
+  assert(
+    !otherStationReadRes.error && otherStationReadRes.lastLine === "0",
+    "Station head cannot see bookings from another station (RLS returns 0 rows)"
+  );
+
+  // Test 15: Price Snapshot - Changing package_prices table later does NOT alter existing booking total
+  console.log("\nTest 15: Price snapshot integrity");
+  runSql(`UPDATE public.package_prices SET price_inr = 999 WHERE package_id = 'ext' AND car_type = 'sedan';`);
+  const checkSnapshotSql = `SELECT total_inr FROM public.bookings WHERE id = '${unassignedId}';`;
+  const snapshotRes = runSql(checkSnapshotSql);
+  assert(
+    snapshotRes.stdout.trim() === "499",
+    `Existing booking total remains 499 after package price table was updated to 999 (got ${snapshotRes.stdout.trim()})`
+  );
+  runSql(`UPDATE public.package_prices SET price_inr = 499 WHERE package_id = 'ext' AND car_type = 'sedan';`);
+
+  // Test 16: Partial Unique Index - Two active bookings cannot take the same parking spot in the same slot
+  console.log("\nTest 16: Partial unique index prevents double booking of spot");
+  const duplicateSpotBookingSql = `
+    SET request.jwt.claim.sub = '${chetanId}';
+    SELECT public.create_booking(
+      ARRAY['car_chetan_suv'],
+      'deep',
+      (CURRENT_DATE + 3)::date,
+      '06:30',
+      'spot_chetan_home',
+      'green_valley'
+    );
+  `;
+  const dupSpotRes = runSql(duplicateSpotBookingSql);
+  assert(
+    Boolean(dupSpotRes.error && (dupSpotRes.error.includes("idx_unique_active_spot_booking") || dupSpotRes.error.includes("unique constraint"))),
+    "Partial unique index blocks second active booking for the same spot and time slot"
+  );
+
+  // Teardown: Clean up transient test users and data
+  runSql(`
+    DELETE FROM public.bookings;
+    DELETE FROM public.cars WHERE owner_id = '${chetanId}';
+    DELETE FROM public.parking_spots WHERE owner_id = '${chetanId}';
+    DELETE FROM public.profiles WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}', '${otherCustomerId}', '${otherStationHeadId}');
+    DELETE FROM auth.users WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}', '${otherCustomerId}', '${otherStationHeadId}');
+    DELETE FROM public.stations WHERE id = 'kothrud_station';
+  `);
 
   console.log("\n--------------------------------------------------------");
   console.log(`Results: ${passCount} Passed, ${failCount} Failed`);

@@ -38,8 +38,12 @@ DECLARE
   v_phone TEXT;
   v_name TEXT;
 BEGIN
-  v_phone := COALESCE(NEW.phone, NEW.raw_user_meta_data->>'phone');
-  v_name := COALESCE(NEW.raw_user_meta_data->>'name', 'Customer');
+  v_phone := COALESCE(NULLIF(NEW.phone, ''), NULLIF(NEW.raw_user_meta_data->>'phone', ''));
+  IF v_phone IS NULL THEN
+    RAISE EXCEPTION 'A valid phone number is required to create a profile.';
+  END IF;
+
+  v_name := COALESCE(NULLIF(NEW.raw_user_meta_data->>'name', ''), 'Customer');
 
   -- If profile already exists by user id, exit
   IF EXISTS (SELECT 1 FROM public.profiles WHERE id = NEW.id) THEN
@@ -52,7 +56,7 @@ BEGIN
     NEW.id,
     'customer',
     v_name,
-    COALESCE(v_phone, '+910000000000'),
+    v_phone,
     NULL
   )
   ON CONFLICT (id) DO UPDATE SET updated_at = timezone('utc', now());

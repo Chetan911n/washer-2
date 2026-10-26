@@ -89,7 +89,7 @@ VALUES
   ('prem', 'hatchback', 1199),
   ('prem', 'sedan', 1199),
   ('prem', 'suv', 1199)
-ON CONFLICT (package_id, car_type) DO UPDATE SET price_inr = EXCLUDED.price_inr;
+ON CONFLICT (package_id, car_type) DO NOTHING;
 
 -- 7. Bookings table
 CREATE TABLE IF NOT EXISTS public.bookings (
