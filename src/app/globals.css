@@ -487,6 +487,7 @@ label {
   }
   .m > .cd {
     border-radius: 24px;
+    max-width: 640px;
   }
 }
 

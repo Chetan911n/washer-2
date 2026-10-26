@@ -34,6 +34,13 @@ export interface DBParkingSpot {
   spot_label: string;
 }
 
+export interface AvailableSlot {
+  slot_start: string;
+  end_time: string;
+  is_available: boolean;
+  is_past: boolean;
+}
+
 /**
  * Fetch cars owned by the signed-in user
  */
@@ -241,6 +248,20 @@ export async function fetchUserBookings(
 /**
  * Business RPC Operations
  */
+export async function fetchAvailableSlotsRpc(params: {
+  date: string; // YYYY-MM-DD
+  packageId: string;
+  stationId?: string;
+}): Promise<AvailableSlot[]> {
+  const { data, error } = await supabase.rpc("get_available_slots", {
+    p_station_id: params.stationId || "green_valley",
+    p_date: params.date,
+    p_package_id: params.packageId,
+  });
+  if (error) throw error;
+  return (data || []) as AvailableSlot[];
+}
+
 export async function createBookingRpc(params: {
   carIds: string[];
   packageId: string;
