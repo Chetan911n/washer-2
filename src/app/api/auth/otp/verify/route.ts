@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOtpProvider } from "@/lib/auth/otpManager";
 import { authLog } from "@/lib/auth/privacy";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(result, { status: 400 });
     }
 
-    // Lookup profile in Supabase database
+    // 1. Lookup profile in Supabase database
     const { data: profile, error } = await supabaseAdmin
       .from("profiles")
       .select("id, role, name, phone, station_id")
@@ -41,62 +42,74 @@ export async function POST(req: NextRequest) {
       authLog("VERIFY_PROFILE_LOOKUP_ERROR", { phone, error: error.message });
     }
 
-    if (profile) {
-      return NextResponse.json({
-        success: true,
-        user: {
-          id: profile.id,
-          name: profile.name,
-          phone: profile.phone,
-          role: profile.role,
-          stationId: profile.station_id,
-        },
-      });
-    }
+    let authUserId = profile?.id || result.user?.id;
+    let authUserName = profile?.name || result.user?.name || "Customer";
+    let authUserRole = profile?.role || result.user?.role || "customer";
+    let authUserStation = profile?.station_id ?? result.user?.stationId ?? null;
 
-    // In dev mode with seeded user fallback
-    if (result.user && result.user.id) {
-      return NextResponse.json({
-        success: true,
-        user: result.user,
-      });
-    }
+    // 2. If new customer in live mode without existing profile, provision in auth.users
+    if (!profile && !result.user?.id) {
+      try {
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          phone,
+          phone_confirm: true,
+          user_metadata: { name: "Customer", phone },
+        });
 
-    // In live mode for a new customer: create auth user & let trigger create profile
-    try {
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        phone,
-        phone_confirm: true,
-        user_metadata: { name: "Customer", phone },
-      });
-
-      if (createError) {
-        throw createError;
+        if (createError) throw createError;
+        authUserId = newUser.user.id;
+      } catch (createErr: any) {
+        authLog("AUTO_PROVISION_CUSTOMER_FAILED", { phone, error: createErr.message });
       }
-
-      return NextResponse.json({
-        success: true,
-        user: {
-          id: newUser.user.id,
-          name: "Customer",
-          phone,
-          role: "customer",
-          stationId: null,
-        },
-      });
-    } catch (createErr: any) {
-      authLog("AUTO_PROVISION_CUSTOMER_FAILED", { phone, error: createErr.message });
-      return NextResponse.json({
-        success: true,
-        user: {
-          id: "temp_customer",
-          name: "Customer",
-          phone,
-          role: "customer",
-          stationId: null,
-        },
-      });
     }
+
+    // 3. Issue a valid Supabase Auth session so browser client is authenticated
+    let session: { access_token: string; refresh_token: string } | null = null;
+    try {
+      const email = `${phone.replace(/[^0-9]/g, "")}@appwasher.test`;
+      const linkRes = await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email,
+        options: { data: { phone, name: authUserName, role: authUserRole } },
+      });
+
+      const hash = linkRes.data?.properties?.hashed_token;
+      const vType = linkRes.data?.properties?.verification_type || "magiclink";
+
+      if (hash) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+        if (anonKey) {
+          const client = createClient(supabaseUrl, anonKey, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+          const exchange = await client.auth.verifyOtp({
+            token_hash: hash,
+            type: vType as any,
+          });
+          if (exchange.data?.session) {
+            session = {
+              access_token: exchange.data.session.access_token,
+              refresh_token: exchange.data.session.refresh_token,
+            };
+          }
+        }
+      }
+    } catch (sessionErr: any) {
+      authLog("SESSION_GENERATION_FAILED", { phone, error: sessionErr.message });
+    }
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: authUserId,
+        name: authUserName,
+        phone,
+        role: authUserRole,
+        stationId: authUserStation,
+      },
+      session,
+    });
   } catch (err: any) {
     authLog("VERIFY_OTP_SERVER_ERROR", { error: err.message });
     return NextResponse.json(
