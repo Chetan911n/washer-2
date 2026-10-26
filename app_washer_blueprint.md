@@ -1,15 +1,15 @@
-# 🚗 AppWasher — Complete Platform Specification & Backend Architecture
+# 🚗 AppWasher — Complete Platform Specification & Master Blueprint
 
 This document serves as the master blueprint, system architecture, database schema, and operational runbook for the **AppWasher** doorstep car-care platform.
 
 ---
 
-## 1. Executive Summary & Live Deployments
+## 1. Executive Summary & Deployments
 
 **AppWasher** is a doorstep car-wash operations platform connecting car owners, washing station managers, and mobile field technicians in a unified real-time workflow.
 
 * **Live Production URL (Next.js Root)**: [https://washer-2.vercel.app](https://washer-2.vercel.app)
-* **Direct Standalone Distribution**: [https://washer-2.vercel.app/appwasher.html](https://washer-2.vercel.app/appwasher.html)
+* **Direct Standalone Distribution (Offline Demo)**: [https://washer-2.vercel.app/appwasher.html](https://washer-2.vercel.app/appwasher.html)
 * **GitHub Repository**: [https://github.com/Chetan911n/washer-2.git](https://github.com/Chetan911n/washer-2.git) (Branch `main`)
 * **Supabase Project Ref**: `jgekymuphznmfsbdexaw`
 
@@ -132,7 +132,7 @@ If `NODE_ENV === 'production'` and `OTP_MODE !== 'live'`, the app **refuses star
 * **Lockout**: 5 consecutive incorrect code entries triggers an automatic **15-minute verification lockout**.
 * **Privacy**: Phone numbers are masked (`+91******0001`) in all logs and client messages. Plain text numbers are never logged.
 
-### Seeded Test Accounts (Development Mode):
+### Seeded Test Accounts (Development Mode Only):
 | Persona | Name | Fake Test Phone | Test Code | Station |
 | :--- | :--- | :--- | :--- | :--- |
 | Customer | Chetan Sharma | `+910000000001` | `123456` | — |
@@ -143,70 +143,98 @@ If `NODE_ENV === 'production'` and `OTP_MODE !== 'live'`, the app **refuses star
 
 ---
 
-## 6. Storage & Camera Photo Capture
+## 6. Admin Staff Management (Station Heads & Washers)
+
+Staff accounts cannot be registered by public customers. They must be provisioned by an administrator.
+
+### Option A: Server API Route (`/api/admin/staff`)
+Authenticated via `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` with constant-time cryptographic verification:
+```bash
+curl -X POST https://washer-2.vercel.app/api/admin/staff \
+  -H "Authorization: Bearer YOUR_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "+919876543210",
+    "name": "Rajesh Kumar",
+    "role": "washer",
+    "station_id": "green_valley"
+  }'
+```
+
+### Option B: SQL Helper Script (`scripts/create_staff.sql`)
+Run manually in Supabase SQL Editor as postgres / service_role:
+```sql
+SELECT public.admin_set_staff_role('+919876543210', 'Rajesh Kumar', 'washer', 'green_valley');
+```
+
+---
+
+## 7. Storage & Camera Photo Capture
 
 * **Storage Bucket**: `booking-photos` (private, access controlled via RLS).
 * **Upload Path**: `{booking_id}/{kind}/{position}.jpg` (e.g. `AW5246/before/front.jpg`).
-* **Camera Capture**: Integrated `<input type="file" accept="image/*" capture="environment" />` for native camera launching on mobile devices.
+* **Camera Capture**: Native HTML file input tag with `<input type="file" accept="image/*" capture="environment" />` for camera triggering on supported mobile devices.
+* **Validation**: File size <= 5MB, MIME type `image/*`.
 * **Retake Mechanism**: Selecting a new photo for a slot automatically overwrites the storage path and updates the database record.
 
 ---
 
-## 7. Automated Test Suite
+## 8. Automated Test Suite (77 Tests)
 
 Run all tests locally or in CI with:
 ```bash
 npm test
 ```
 
-### Verified Test Results (44 Total Tests):
-* **Suite 1: Auth & OTP Security (`tests/auth-otp.test.ts`)** — 25 Passed, 0 Failed:
-  * Seeded phone receives dev OTP; fixed code `123456` verifies cleanly.
-  * Non-seeded real phone rejected in dev mode.
-  * Live adapter refuses seeded test numbers.
-  * Startup refuses in production when `OTP_MODE != live`.
-  * 30-second cooldown enforced.
-  * 5 wrong codes triggers 15-minute lockout; locked account rejects further attempts.
-* **Suite 2: Database & RLS Enforcement (`tests/database-rls.test.ts`)** — 19 Passed, 0 Failed:
-  * Customer cannot alter own role (privilege escalation blocked).
-  * `create_booking` validates ownership, snapshots flat package prices, generates `AWxxxx` ID.
-  * State machine blocks illegal status transitions.
-  * Station head can assign washer; customer cannot.
-  * Washer capacity limit of 2 active bookings per slot strictly enforced.
-  * `start_wash` blocked without 4 before-photos.
-  * Customer cannot cancel booking once washing has started.
-  * `complete_job` blocked without 4 after-photos.
-  * Cash payment moves status to `paid`.
-  * Customer review submission works for paid bookings.
-  * Direct `UPDATE` denied on `public.bookings` for client roles.
+### Test Suite Breakdown:
+1. **Suite 1: Auth & WhatsApp OTP (`tests/auth-otp.test.ts`)** — 25 Passed, 0 Failed:
+   * Dev/live OTP adapters, test numbers, cooldowns, hourly rate limits, 15-minute lockouts, and production startup refusal.
+2. **Suite 2: App Logic & Pricing (`tests/app.test.ts`)** — 13 Passed, 0 Failed:
+   * Booking totals for single/multi-car orders, DEV MODE badge visibility, Quick Demo buttons gating, and production startup security gate.
+3. **Suite 3: Database & RLS Enforcement (`tests/database-rls.test.ts`)** — 31 Passed, 0 Failed:
+   * Localhost safety guard, verified phone requirement on signup, role tampering prevention, readable IDs, price snapshots, status transitions, washer capacity (max 2), 4-photo validation (before and after), RLS isolation across customers, washers, and station heads, and partial unique index on spots.
+4. **Suite 4: End-to-End Workflow (`tests/e2e-workflow.test.ts`)** — 8 Passed, 0 Failed:
+   * Programmatic execution of the 8-step lifecycle with printed database row proofs.
+
+> [!NOTE]
+> **Pending Manual Verification Items**:
+> 1. Multi-device live cross-browser realtime subscription latency on the production domain.
+> 2. Physical hardware camera shutter release on various mobile phone operating systems (iOS Safari & Android Chrome).
 
 ---
 
-## 8. Runbook: Switching from Dev Mode to Live Mode
+## 9. Operational Runbooks
 
-To transition the platform to live WhatsApp messaging:
+### Runbook 1: Failed Database Migration
+If a migration fails during deployment:
+1. Check migration status via Supabase CLI:
+   ```bash
+   supabase migration list
+   ```
+2. Locate the failed migration timestamp in `supabase/migrations/`.
+3. Fix the syntax or schema error in a **new corrective migration** (never rewrite applied migrations in production).
+4. Apply the corrective migration via `git push origin main`.
+5. Verify schema health in the Supabase Dashboard Table Editor.
 
-### Step 1: Complete Meta Business Verification
-1. Open [Meta Business Suite](https://business.facebook.com/).
-2. Submit your business documentation for Business Verification.
-3. Once approved, create or link a WhatsApp Business Account (WABA).
+### Runbook 2: WhatsApp OTP Outage Fallback
+If Meta's WhatsApp Cloud API experiences downtime or delivery delays:
+1. Check Meta WhatsApp Status: [https://metastatus.com/](https://metastatus.com/).
+2. Review server logs in Vercel for `[AUTH:LIVE_OTP_DISPATCH_FAILED]` errors and error codes:
+   * `131030`: Recipient phone number not in WhatsApp directory.
+   * `131047`: Re-engagement message required (outside 24h window).
+   * `132000`: Template does not exist or parameter count mismatch.
+3. If an extended outage occurs, switch emergency fallback SMS gateway via the OTP adapter interface in `src/lib/auth/otpManager.ts`.
 
-### Step 2: Register & Approve OTP Template
-1. In the WhatsApp Manager under **Account > Message Templates**, create an **Authentication** template:
-   * **Template Name**: `appwasher_auth_otp`
-   * **Category**: `Authentication`
-   * **Language**: `en`
-   * **Button**: One-tap autofill or copy code button.
-2. Wait for Meta's automated approval (typically 2-15 minutes).
+### Runbook 3: Payment Webhook Failure & Reconciliation
+If a customer completes a UPI/online payment but their network drops before the confirmation callback:
+1. Locate the booking ID (`AWxxxx`) from the customer's phone number in `bookings`.
+2. Check the payment gateway dashboard (Razorpay) for the transaction ID and status (`captured`).
+3. If payment is verified, execute manual reconciliation via SQL:
+   ```sql
+   INSERT INTO public.payments (booking_id, method, amount_inr, status, transaction_id, confirmed_at)
+   VALUES ('AWxxxx', 'upi', 499, 'confirmed', 'pay_xxxxx', now())
+   ON CONFLICT (booking_id) DO UPDATE SET status = 'confirmed', confirmed_at = now();
 
-### Step 3: Configure Environment Variables
-In your production environment (Vercel / Supabase Vault), set:
-```bash
-OTP_MODE=live
-WHATSAPP_PHONE_NUMBER_ID="your_meta_phone_number_id"
-WHATSAPP_ACCESS_TOKEN="your_system_user_permanent_token"
-WHATSAPP_OTP_TEMPLATE_NAME="appwasher_auth_otp"
-WHATSAPP_LANGUAGE_CODE="en"
-```
-
-No code changes are required. Changing `OTP_MODE=live` automatically activates `LiveWhatsAppOtpProvider`, disables dev shortcuts, removes the "DEV MODE" badge, and delivers real WhatsApp OTP messages.
+   UPDATE public.bookings SET status = 'paid', updated_at = now() WHERE id = 'AWxxxx';
+   ```
+4. Real-time channels immediately push the `paid` status to the customer and station head screens.

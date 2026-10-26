@@ -4,14 +4,30 @@ import { LiveWhatsAppOtpProvider } from "./providers/liveWhatsAppOtpProvider";
 
 export const PROD_PROJECT_REF = "jgekymuphznmfsbdexaw";
 
+export function isTemporaryTestMode(): boolean {
+  return (
+    process.env.TEMPORARY_TEST_MODE === "true" ||
+    process.env.NEXT_PUBLIC_TEMPORARY_TEST_MODE === "true"
+  );
+}
+
 export function getOtpMode(): "dev" | "live" {
   const mode = (process.env.OTP_MODE || "").trim().toLowerCase();
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim().toLowerCase();
   const isProduction =
     process.env.NODE_ENV === "production" &&
     process.env.NEXT_PHASE !== "phase-production-build";
+  const tempTestActive = isTemporaryTestMode();
 
-  // Existing production refusal (KEPT EXACTLY AS IT IS)
+  // If Temporary Test Mode is explicitly activated, allow dev mode on washer-2 for testing
+  if (tempTestActive) {
+    if (mode === "live") {
+      return "live";
+    }
+    return "dev";
+  }
+
+  // Existing production refusal (KEPT EXACTLY AS IT IS when temporary test mode is not enabled)
   if (isProduction) {
     if (mode !== "live") {
       throw new Error(

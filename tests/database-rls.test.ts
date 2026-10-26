@@ -127,8 +127,8 @@ async function runDatabaseTests() {
     DELETE FROM public.bookings;
     DELETE FROM public.cars WHERE owner_id = '${chetanId}';
     DELETE FROM public.parking_spots WHERE owner_id = '${chetanId}';
-    DELETE FROM public.profiles WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}', '${sureshId}');
-    DELETE FROM auth.users WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}', '${sureshId}');
+    DELETE FROM public.profiles WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}', '${sureshId}') OR phone IN ('+910000000001', '+910000000002', '+910000000003', '+910000000004');
+    DELETE FROM auth.users WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}', '${sureshId}') OR phone IN ('+910000000001', '+910000000002', '+910000000003', '+910000000004');
 
     INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, phone, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
     VALUES

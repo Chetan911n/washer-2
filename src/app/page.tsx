@@ -239,6 +239,7 @@ export default function Home() {
   const [expiryRemaining, setExpiryRemaining] = useState(300);
   const [maskedPhoneDisplay, setMaskedPhoneDisplay] = useState("");
   const [devModeActive, setDevModeActive] = useState(true);
+  const [isTempTest, setIsTempTest] = useState(false);
   const [devCodeAvailable, setDevCodeAvailable] = useState<string | undefined>("123456");
 
   // Washer tab
@@ -275,6 +276,7 @@ export default function Home() {
       .then((data) => {
         if (data.success) {
           setDevModeActive(Boolean(data.devMode));
+          setIsTempTest(Boolean(data.isTemporaryTest));
         }
       })
       .catch(() => {});
@@ -476,6 +478,10 @@ export default function Home() {
       const roleMapped =
         user.role === "station_head" ? "station" : (user.role as "customer" | "station" | "washer");
 
+      if (data.session) {
+        await supabase.auth.setSession(data.session);
+      }
+
       updateState((prev) => ({
         ...prev,
         role: roleMapped,
@@ -536,6 +542,10 @@ export default function Home() {
       const data = await res.json();
 
       if (data.success && data.user) {
+        if (data.session) {
+          await supabase.auth.setSession(data.session);
+        }
+
         const u = data.user;
         const roleMapped =
           u.role === "station_head" ? "station" : (u.role as "customer" | "station" | "washer");
@@ -573,6 +583,7 @@ export default function Home() {
   };
 
   const handleLogout = () => {
+    supabase.auth.signOut().catch(() => {});
     updateState((prev) => ({
       ...prev,
       role: null,
@@ -977,6 +988,28 @@ export default function Home() {
 
   return (
     <>
+      {devModeActive && (
+        <div
+          data-testid="staging-dev-banner"
+          style={{
+            background: "#FEF3C7",
+            color: "#92400E",
+            padding: "8px 16px",
+            textAlign: "center",
+            fontSize: "12px",
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+            borderBottom: "1px solid #FDE68A",
+            position: "sticky",
+            top: 0,
+            zIndex: 9999,
+          }}
+        >
+          {isTempTest
+            ? "🧪 TEMPORARY TEST MODE (washer-2 · Fixed OTP: 123456 · Quick Demo Enabled)"
+            : "🧪 STAGING · DEV MODE (Test accounts only — No real WhatsApp messages sent)"}
+        </div>
+      )}
       {/* 1. AUTH SCREEN (WHATSAPP OTP FLOW) */}
       {!S.role ? (
         <div className="auth">
