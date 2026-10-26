@@ -36,8 +36,8 @@ async function runEndToEndVerification() {
     DELETE FROM public.photos;
     DELETE FROM public.cars WHERE owner_id = '${chetanId}';
     DELETE FROM public.parking_spots WHERE owner_id = '${chetanId}';
-    DELETE FROM public.profiles WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}');
-    DELETE FROM auth.users WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}');
+    DELETE FROM public.profiles WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}') OR phone IN ('+910000000001', '+910000000002', '+910000000003');
+    DELETE FROM auth.users WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}') OR phone IN ('+910000000001', '+910000000002', '+910000000003') OR email IN ('chetan@appwasher.test', 'station@appwasher.test', 'rajesh@appwasher.test');
 
     INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, phone, raw_user_meta_data, created_at, updated_at)
     VALUES
@@ -260,8 +260,8 @@ async function runEndToEndVerification() {
     DELETE FROM public.photos;
     DELETE FROM public.cars WHERE owner_id = '${chetanId}';
     DELETE FROM public.parking_spots WHERE owner_id = '${chetanId}';
-    DELETE FROM public.profiles WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}');
-    DELETE FROM auth.users WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}');
+    DELETE FROM public.profiles WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}') OR phone IN ('+910000000001', '+910000000002', '+910000000003');
+    DELETE FROM auth.users WHERE id IN ('${chetanId}', '${stationHeadId}', '${rajeshId}') OR phone IN ('+910000000001', '+910000000002', '+910000000003') OR email IN ('chetan@appwasher.test', 'station@appwasher.test', 'rajesh@appwasher.test');
   `);
 
   console.log("\n--------------------------------------------------------");

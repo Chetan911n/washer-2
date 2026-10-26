@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getOtpMode } from "@/lib/auth/otpManager";
+import { getOtpMode, PROD_PROJECT_REF } from "@/lib/auth/otpManager";
 import { SEEDED_DEV_USERS } from "@/lib/auth/constants";
 
 export const dynamic = "force-dynamic";
@@ -7,13 +7,16 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const mode = getOtpMode();
-    const isDev = mode === "dev";
+    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim().toLowerCase();
+    const isProdDb = supabaseUrl.includes(PROD_PROJECT_REF);
+    const isDev = mode === "dev" && !isProdDb;
 
     return NextResponse.json({
       success: true,
       mode,
       devMode: isDev,
       isLive: !isDev,
+      isStaging: isDev,
       demoUsers: isDev ? SEEDED_DEV_USERS : [],
     });
   } catch (err: any) {
