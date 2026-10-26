@@ -10,8 +10,9 @@
     "test:auth": "tsx tests/auth-otp.test.ts",
     "test:app": "tsx tests/app.test.ts",
     "test:db": "tsx tests/database-rls.test.ts",
+    "test:calendar": "tsx tests/booking-calendar.test.ts",
     "test:e2e": "tsx tests/e2e-workflow.test.ts",
-    "test": "tsx tests/auth-otp.test.ts && tsx tests/app.test.ts && tsx tests/database-rls.test.ts && tsx tests/e2e-workflow.test.ts"
+    "test": "tsx tests/auth-otp.test.ts && tsx tests/app.test.ts && tsx tests/database-rls.test.ts && tsx tests/booking-calendar.test.ts && tsx tests/e2e-workflow.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

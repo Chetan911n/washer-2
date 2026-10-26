@@ -22,6 +22,15 @@ import {
   DBBooking,
 } from "@/lib/dataService";
 import { SEEDED_DEV_USERS } from "@/lib/auth/constants";
+import { BookingCalendarStep } from "@/components/BookingCalendarStep";
+import {
+  formatLongDate,
+  formatTime12,
+  getIstTodayIso,
+  getIstOffsetIso,
+  addMinutesToTime,
+  PACKAGE_DURATIONS,
+} from "@/lib/calendarUtils";
 
 const K = "appwasher_v2";
 
@@ -64,9 +73,9 @@ interface AppState {
 }
 
 const PK = [
-  { id: "ext", n: "Exterior Foam Wash", p: 499, d: "Foam wash, wheel clean, glass shine" },
-  { id: "deep", n: "Deep Wash & Polish", p: 799, d: "Foam wash, tyre dressing, wax polish" },
-  { id: "prem", n: "Premium Detail", p: 1199, d: "Deep wash plus interior vacuum and dashboard care" },
+  { id: "ext", n: "Exterior Foam Wash", p: 499, d: "Foam wash, wheel clean, glass shine", dur: 45 },
+  { id: "deep", n: "Deep Wash & Polish", p: 799, d: "Foam wash, tyre dressing, wax polish", dur: 75 },
+  { id: "prem", n: "Premium Detail", p: 1199, d: "Deep wash plus interior vacuum and dashboard care", dur: 120 },
 ];
 
 const WS = ["Rajesh Kumar", "Suresh Verma", "Imran Khan"];
@@ -249,6 +258,7 @@ export default function Home() {
     d?: string;
     ds?: string[];
     sl?: string;
+    slotEnd?: string;
     addr?: string;
     spot?: string;
     payId?: string;
@@ -629,20 +639,15 @@ export default function Home() {
 
   // Booking Modal
   const openBookingModal = () => {
-    const dates = [...Array(7)].map((_, i) => {
-      const x = new Date();
-      x.setDate(x.getDate() + i + 1);
-      return x.toDateString().slice(0, 10);
-    });
-
+    const initialDate = getIstOffsetIso(1);
     setM({
       type: "book",
       s: 1,
       cars: S.cars.length ? [S.cars[0].id] : [],
       pkg: "ext",
-      d: dates[0],
-      ds: dates,
-      sl: SL[1],
+      d: initialDate,
+      sl: undefined,
+      slotEnd: undefined,
       addr: S.addr,
       spot: S.spot,
     });
@@ -668,7 +673,7 @@ export default function Home() {
     const t = getBookingTotal();
     const pkgItem = PK.find((p) => p.id === M.pkg) || PK[0];
     const scheduledDateIso = toIsoDate(M.d || "");
-    const slotStartRaw = SLOT_MAP[M.sl || "08:30 AM"] || "08:30";
+    const slotStartRaw = SLOT_MAP[M.sl || ""] || M.sl || "08:30";
 
     if (S.userId) {
       try {
@@ -1867,7 +1872,11 @@ export default function Home() {
                                 margin: "10px 0",
                                 border: isSel ? "1.5px solid var(--g)" : undefined,
                               }}
-                              onClick={() => setM({ ...M, pkg: p.id })}
+                              onClick={() => {
+                                const newDuration = PACKAGE_DURATIONS[p.id] || 45;
+                                const updatedSlotEnd = M.sl ? addMinutesToTime(M.sl, newDuration) : undefined;
+                                setM({ ...M, pkg: p.id, slotEnd: updatedSlotEnd });
+                              }}
                             >
                               <div className="row">
                                 <b>{p.n}</b>
@@ -1893,37 +1902,30 @@ export default function Home() {
                     {/* Step 3: Date & Time */}
                     {s === 3 && (
                       <div>
-                        <label>Date</label>
-                        <div className="chips">
-                          {(M.ds || []).map((date) => (
-                            <span
-                              key={date}
-                              className={`chip ${M.d === date ? "on" : ""}`}
-                              onClick={() => setM({ ...M, d: date })}
-                            >
-                              {date}
-                            </span>
-                          ))}
-                        </div>
-
-                        <label>Time slot</label>
-                        <div className="chips">
-                          {SL.map((slot) => (
-                            <span
-                              key={slot}
-                              className={`chip ${M.sl === slot ? "on" : ""}`}
-                              onClick={() => setM({ ...M, sl: slot })}
-                            >
-                              {slot}
-                            </span>
-                          ))}
-                        </div>
+                        <BookingCalendarStep
+                          selectedDate={M.d || getIstOffsetIso(1)}
+                          onSelectDate={(newDate) => setM({ ...M, d: newDate })}
+                          selectedSlot={M.sl}
+                          onSelectSlot={(slotStart, slotEnd) => {
+                            setM({
+                              ...M,
+                              sl: slotStart || undefined,
+                              slotEnd: slotEnd || undefined,
+                            });
+                          }}
+                          packageId={M.pkg || "ext"}
+                          stationId="green_valley"
+                        />
 
                         <div className="row" style={{ marginTop: "16px" }}>
                           <button className="btn o" onClick={() => setM({ ...M, s: 2 })}>
                             Back
                           </button>
-                          <button className="btn" onClick={() => setM({ ...M, s: 4 })}>
+                          <button
+                            className="btn"
+                            disabled={!M.d || !M.sl}
+                            onClick={() => setM({ ...M, s: 4 })}
+                          >
                             Next: Location
                           </button>
                         </div>
@@ -1987,9 +1989,13 @@ export default function Home() {
                             </b>
                           </div>
                           <div className="row" style={{ margin: "8px 0" }}>
-                            <span className="mu">Slot</span>
+                            <span className="mu">Scheduled Date</span>
+                            <b>{formatLongDate(M.d)}</b>
+                          </div>
+                          <div className="row" style={{ margin: "8px 0" }}>
+                            <span className="mu">Time Slot</span>
                             <b>
-                              {M.d}, {M.sl}
+                              {formatTime12(M.sl)} to {formatTime12(M.slotEnd || addMinutesToTime(M.sl || "08:30", pkgItem.dur || 45))}
                             </b>
                           </div>
                           <div className="row" style={{ margin: "8px 0" }}>
